@@ -1,7 +1,7 @@
 # Digital Twins in Action
 
-## Chapter 2 code samples
-In this repository you will find the complete code samples from Chapter 2 of Digital Twins in Action.
+## Chapter 2 - Mapping physical systems to a digital representation - code samples
+In this repository you will find the complete code samples from Chapter 2 of Digital Twins in Action where you learn how you can map physical objects to digitial representations, using techniques such as OCR, multi object recognition, image-capable LLMs, and coordinate reference systems.
 
 ### Preparing to run the code
 The samples are all written in Python. Some of the sample code uses example data also found in this repository. 
@@ -24,6 +24,12 @@ The libraries that are required to run the code samples (including OCR and compu
 You are now ready to run the code samples and adapt them to your own use case!
 
 #### 2.1 Using OCR to extract a meter reading from a paper bill
+This code uses Tesseract to extract a meter reading from this gas bill
+
+![Gas bill](images/gasBill.png)
+
+Before you run this example, you will need Tesseract installed on your computer - go to https://tesseract-ocr.github.io/tessdoc/Installation.html to get the installation instructions.
+
 To run this example, execute the following command
 
 `
@@ -31,6 +37,10 @@ python ch02_code01_biegel.py
 `
 
 #### 2.2 Using OCR to extract a meter reading from an image of an analog meter
+This code uses Tesseract to extract a meter reading from this photograph
+
+![Gas bill](images/waterMeter.jpg)
+
 To run this example, execute the following command
 
 `
@@ -38,17 +48,26 @@ python ch02_code02_biegel.py
 `
 
 #### 2.3 Multiple object detection in a video stream
-To run this example, execute the following command
+You will need a webcam on your computer to try this example (the built in one will work fine). If you have any trouble, you may need to change the index of the Webcam on line 11 (more details here https://docs.opencv.org/4.x/dd/d43/tutorial_py_video_display.html)
+
+To run this example, execute the following command.
+
 
 `
 python ch02_code03_biegel.py
 `
 
-#### 2.4 Transform a PID to JSON using Anthrpoic Claude LLM
+#### 2.4 Transform a PID to JSON using Anthropic Claude LLM
+You will need a key to the Anthropic API to run this example, which you can get here https://docs.anthropic.com/en/home. If you don't have an API key, the next file contains the output of running this code. 
+
+The code uses an LLM to convert this PID diagram to a structured JSON representation
+
+![Gas bill](images/pid.png)
+
 To run this example, execute the following command
 
 `
-python ch02_code04_biegel.py
+python ch02_code04_biegel.py -k <your_api_key>
 `
 
 #### 2.5 Output of 2.5
@@ -61,18 +80,24 @@ ch02_code05_biegel.json
 #### 2.6 Extract geographical coordinates from an image
 To run this example, execute the following command to see where in the world the image of the rock paintings was taken.
 
+![Rock paintings](images/rockPaintings.jpg)
+
 `
 python ch02_code06_biegel.py images/rockPainting.jpg
 `
 
 #### 2.7 Transform local coordinates to projected global coordinates 
+This example projects local coordinates to a location in the real world.
+
 To run this example, execute the following command. See if you can work out where in the world I have placed my square! 
 
 `
 python ch02_code07_biegel.py
 `
 
-#### 2.7 Transform projected UTM coordinates to latitude and longitude
+#### 2.8 Transform projected UTM coordinates to latitude and longitude
+This code uses the PROJ library to show how simple coordinate transformation can be.
+
 To run this example, execute the following command
 
 `

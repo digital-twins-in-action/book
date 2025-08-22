@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Description: Digital Twins in Action - Add LoRa Device
+Parameters:
+  DeploymentBucket:
+    Type: String
+    Description: The name of the bucket where the lambda source code is located
+
+  DevEUI:
+    Type: String
+    Description: The device EUI of the Sensor
+    Default: a840410b0189cfca
+
+  AppKey:
+    Type: String
+    Description: The app key of the Sensor
+    Default: 593f7974447b46dcdde20bfe46275cb6
+
+  AppEUI:
+    Type: String
+    Description: The app EUI of the Sensor
+    Default: a840410000000107
+
+Resources:
+  DTIAIoTWirelessGatewayCertManagerRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - iotwireless.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AWSIoTWirelessGatewayCertManager
+
+  LogGroup:
+    Type: 'AWS::Logs::LogGroup'
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/MessageDecoderLambda"
+
+  DTIADestinationRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - iotwireless.amazonaws.com
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: DTIADestinationPolicy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iot:DescribeEndpoint
+                  - iot:Publish
+                Resource: '*'
+      Path: /
+
+  IamRoleLambdaExecution:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+      Policies:
+        - PolicyName: !Join 
+            - '-'
+            - - MessageDecoderLambda
+              - lambda
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogStream'
+                  - 'logs:CreateLogGroup'
+                Resource:
+                  - !Sub >-
+                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
+              - Effect: Allow
+                Action:
+                  - 'logs:PutLogEvents'
+                Resource:
+                  - !Sub >-
+                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
+      Path: /
+      RoleName: !Join 
+        - '-'
+        - - MessageDecoderLambdaFunction
+          - !Ref 'AWS::Region'
+          - lambdaRole
+
+  MessageDecoderLambdaFunction:
+    Type: 'AWS::Lambda::Function'
+    Properties:
+      Code:
+        S3Bucket: !Sub "${DeploymentBucket}"
+        S3Key: lambda.zip
+      Handler: lambda_handler
+      Runtime: python3.13
+      FunctionName: MessageDecoderLambda
+      MemorySize: 3008
+      Timeout: 900
+      Role: !GetAtt IamRoleLambdaExecution.Arn
+    DependsOn:
+      - LogGroup
+
+  DeviceProfile:
+    Type: AWS::IoTWireless::DeviceProfile
+    Properties: 
+      LoRaWAN: 
+        MacVersion: 1.0.3
+        MaxEirp: 15
+        RegParamsRevision: RP002-1.0.1
+        RfRegion: AU915
+        RxDataRate2: 8
+        RxDelay1: 1
+        RxFreq2: 9233000
+        Supports32BitFCnt: true
+        SupportsJoin: true
+      Name: AU915-A-OTTA-DTIA
+
+  ServiceProfile:
+    Type: AWS::IoTWireless::ServiceProfile
+    Properties: 
+      LoRaWAN: 
+        AddGwMetadata: true
+      Name: DTIAServiceProfile
+
+  LeakSensorDevice:
+    Type: AWS::IoTWireless::WirelessDevice
+    Properties:
+      Description: 'Water leak sensor'
+      DestinationName: !Ref DTIADestination
+      LoRaWAN: 
+        OtaaV10x: 
+          AppKey: !Sub "${AppKey}"
+          AppEui: !Sub "${AppEUI}"
+        DevEui: !Sub "${DevEUI}"
+        DeviceProfileId: !Ref DeviceProfile
+        ServiceProfileId: !Ref ServiceProfile
+      Name: 'Indoor Temperature Humidity Sensor'
+      Type: LoRaWAN
+
+  LeakSensorOneTopicRule:
+    Type: AWS::IoT::TopicRule
+    Properties: 
+      RuleName: LeakSensorOneTopicRule
+      TopicRulePayload: 
+        AwsIotSqlVersion: '2016-03-23'
+        Actions: 
+          - Lambda:
+              FunctionArn: !GetAtt MessageDecoderLambdaFunction.Arn
+        Sql: SELECT topic(0) as topic, * AS topic from '#'
+
+  DTIADestination:
+    Type: AWS::IoTWireless::Destination
+    Properties: 
+      Description: 'Home Digital Twin destination'
+      Expression: 'home/water/laundry/leak_sensor_1'
+      ExpressionType: MqttTopic
+      Name: DTIADestination
+      RoleArn: !GetAtt DTIADestinationRole.Arn
