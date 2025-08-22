@@ -1,0 +1,146 @@
+{
+  "equipment": [
+    {
+      "id": "T001",
+      "type": "Storage Tank",
+      "service": "Storage Tank",
+      "specifications": {
+        "diameter": "1000 mm",
+        "height": "3000 mm",
+        "capacity": "2.4 m3",
+        "design_pressure": "10 barg",
+        "design_temperature": "50°C"
+      },
+      "nozzles": ["N1", "N2", "N3", "N4", "N5", "N6"]
+    },
+    {
+      "id": "P001",
+      "type": "Feed Pump",
+      "service": "Feed Pump",
+      "specifications": {
+        "flow_rate": "5 m3/h",
+        "differential_pressure": "2.5 bar",
+        "design_pressure": "10 barg",
+        "design_temperature": "50°C"
+      }
+    }
+  ],
+  "instruments": [
+    {
+      "id": "L-0011",
+      "type": "Level Indicator",
+      "service": "Tank Level Measurement",
+      "location": "T001",
+      "signal_type": "SH"
+    },
+    {
+      "id": "L-0012",
+      "type": "Level Alarm Low",
+      "service": "Low Level Alarm",
+      "location": "T001",
+      "signal_type": "AL"
+    },
+    {
+      "id": "PI-0013",
+      "type": "Pressure Indicator",
+      "service": "Pressure Measurement",
+      "location": "Pump Discharge Line"
+    }
+  ],
+  "control_elements": [
+    {
+      "id": "PA-6barg",
+      "type": "Pressure Relief Valve",
+      "set_pressure": "6 barg",
+      "location": "Pump Discharge"
+    }
+  ],
+  "process_lines": [
+    {
+      "id": "01-100-PE-N",
+      "from": "SOLVENT FROM UNIT 1",
+      "to": "T001-N1",
+      "line_size": "100",
+      "service": "Solvent Feed"
+    },
+    {
+      "id": "02-100-PE-N",
+      "from": "P001",
+      "to": "SOLVENT TO UNIT 3",
+      "line_size": "100",
+      "service": "Solvent Transfer"
+    }
+  ],
+  "connections": [
+    {
+      "from": "SOLVENT FROM UNIT 1",
+      "to": "T001",
+      "via": "N1",
+      "line": "01-100-PE-N"
+    },
+    {
+      "from": "T001",
+      "to": "P001",
+      "via": "N3",
+      "connection_type": "suction"
+    },
+    {
+      "from": "P001",
+      "to": "SOLVENT TO UNIT 3",
+      "line": "02-100-PE-N",
+      "connection_type": "discharge"
+    },
+    {
+      "from": "L-0011",
+      "to": "T001",
+      "via": "N4",
+      "connection_type": "measurement"
+    },
+    {
+      "from": "L-0012",
+      "to": "T001",
+      "via": "N6",
+      "connection_type": "measurement"
+    },
+    {
+      "from": "PI-0013",
+      "to": "02-100-PE-N",
+      "connection_type": "measurement"
+    },
+    {
+      "from": "PA-6barg",
+      "to": "02-100-PE-N",
+      "connection_type": "pressure_relief"
+    }
+  ],
+  "valves": [
+    {
+      "id": "V-001",
+      "type": "Manual Valve",
+      "location": "T001 bottom outlet (N3)"
+    },
+    {
+      "id": "V-002",
+      "type": "Manual Valve", 
+      "location": "P001 suction"
+    },
+    {
+      "id": "V-003",
+      "type": "Manual Valve",
+      "location": "P001 discharge"
+    },
+    {
+      "id": "V-004",
+      "type": "Manual Valve",
+      "location": "Discharge line to Unit 3"
+    }
+  ],
+  "motor": [
+    {
+      "id": "M-001",
+      "type": "Electric Motor",
+      "drives": "P001",
+      "symbol": "M"
+    }
+  ]
+}
