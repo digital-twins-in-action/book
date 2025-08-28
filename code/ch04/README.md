@@ -1,0 +1,127 @@
+# Digital Twins in Action
+
+## Chapter 4 - Integrating and managing data - code samples
+In this repository you will find the complete code samples from Chapter 4 of Digital Twins in Action where you learn about how to integrate different data sources and store data in a digital twin.
+
+### Preparing to run the code
+The samples are written in Python and AWS CloudFormation. Some of the sample code uses example data also found in this repository. 
+To run the Python code, you will need a version of Python 3 installed on your system - the code has been tested with the latest release at the time of writing. Installers for Python are available from the Python website at https://www.python.org/. 
+
+I recommend using the *virtualenv* tool to create an isolated Python environment in which to run the code and isolate dependencies from your main Python installation. Since Python 3.3 a subset of virtualenv, known as *venv* has been integrated into the standard library.
+
+To create a virtual environment named *dtia*, type the following command:
+
+`python3 -m venv dtia`
+
+You can then activate the virtual environment by typing the following command
+
+`source dtia/bin/activate`
+
+The libraries that are required to run the code samples (including OCR and computer vision libraries) are defined in the requirements.txt file included in the books GitHub repository. To install the required libraries in your virtual environment, run the following command
+
+`pip install -r requirements.txt`
+
+You are now ready to run the code samples and adapt them to your own use case!
+
+#### 4.1 Example of querying a relational database
+This example uses a simple SQLite database to demonstrate the concept of joining tables in a relational database using SQL. It loads data in the `maintenance.db` file in this directory and runs a query against it.
+
+To run this example, execute the following command
+
+`
+python ch04_code01_biegel.py
+`
+
+#### 4.2 Example of querying spatial data to find items in close proximity
+This example shows how you can use a simple Euclidian distance formula to find objects in a given proximity to a given point. By using projected UTM coordinates the maths is much simpler than would be the case with a spherical coordinate system.
+
+To run this example, execute the following command
+
+`
+python ch04_code02_biegel.py
+`
+
+#### 4.3 Example of integrating with the SAP API
+To run this sample and explore the SAP APIs, you will need to head to api.sap.com and register in order to get an API key for the free sandbox API. Its quite a simple signup process. You'll get an idea of what it is like to integrate with a common ERP system via its API.
+
+To run this example, execute the following command
+
+`
+python ch04_code03_biegel.py
+`
+
+#### 4.4 Example of batch ingestion to a SQL database followed by querying the data with SQL
+This example illustrates the batch ingestion of historical data, its staging in a local database, and then the use of SQL to analyze this data. This is a common scenario in a digital twin where past behaviour and data is sued to predict future outcomes.
+
+To run this example, execute the following command
+
+`
+python ch04_code04_biegel.py
+`
+
+
+#### 4.5 Example of ingesting a stream of events related to the UK rail network and running a sliding window over them
+You will need to register for an account at in order to run this example. Its a simple signup process.
+
+To run this example, execute the following command
+
+`
+python ch04_code05_biegel.py
+`
+
+#### 4.6 An example of querying a NASA REST API to get an image of the largest man made lake on the planet
+This example demonstrates integrating with a freely available REST API to retrieve geophysical data from satellite imagery.
+
+You can adjust the bounding box coordinates to get pretty much anywhere on earth!
+
+To run this example, execute the following command
+
+`
+python ch04_code06_biegel.py
+`
+
+An example image returned by this script is shown below
+
+![Kariba](images/lake_kariba_2025-08-23.png)
+
+#### 4.7 Example of using SQL to directly query data in a Parquet file using DuckDB
+This example shows how you can use SQL to directly query data stored in a Parquet file without the need to load it to a staging database first. 
+
+To run this example, execute the following command
+
+`
+python ch04_code07_biegel.py
+`
+
+#### 4.8 An example of using the Feast feature store to store engineered features that can be used in ML models
+This example sets up a feature store in Feast and generates and stores some features from synthetic IoT sensor data to demonstrate the concept of a feature store.
+
+To run this example, execute the following command:
+
+`
+python ch04_code08_biegel.py
+`
+
+#### 4.9 An example of storing an querying timeseries data from DynamoDB
+This example uses a local version of DynamoDB running in a Docker container so that you can run the example without the need to connect to AWS. 
+
+To start the local DynamoDB server run the following command:
+
+`
+ docker run -p 8000:8000 amazon/dynamodb-local
+`
+
+Once the container is running, you can load the sample data by running:
+
+`
+python populate_dynamo.py
+`
+
+Finally you can run the sample code by running:
+
+`
+python ch04_code09_biegel.py
+`
+
+#### Creating an Apache Tinkerpop Gremlin server running on EC2 in AWS
+I use an Apache Tinkerpop Gremlin server running on EC2 in my home digital twin to serve the graph database. The CloudFormation script in `gremlin-server.yml` will setup a publically accessible Gremlin database for you.

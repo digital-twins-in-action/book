@@ -1,0 +1,210 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Apache TinkerPop Gremlin Server on EC2 Free Tier with Docker'
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair
+
+  AllowedCidr:
+    Description: CIDR block for SSH and Gremlin Server access (use 0.0.0.0/0 for open access, but not recommended for production)
+    Type: String
+    Default: '0.0.0.0/0'
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$'
+    ConstraintDescription: Must be a valid CIDR block
+
+  InstanceType:
+    Description: EC2 instance type (free tier eligible)
+    Type: String
+    Default: t3.micro
+    AllowedValues:
+      - t2.micro
+      - t3.micro
+    ConstraintDescription: Must be a free tier eligible instance type
+
+Resources:
+  # Security Group
+  GremlinServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Gremlin Server
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedCidr
+          Description: SSH access
+        - IpProtocol: tcp
+          FromPort: 8182
+          ToPort: 8182
+          CidrIp: !Ref AllowedCidr
+          Description: Gremlin Server access
+      Tags:
+        - Key: Name
+          Value: GremlinServerSG
+
+  # IAM Role for EC2 (optional, for potential CloudWatch logging)
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Name
+          Value: GremlinServerRole
+
+  # Instance Profile
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  # EC2 Instance
+  GremlinServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}'
+      SecurityGroupIds:
+        - !Ref GremlinServerSecurityGroup
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 30
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+          
+          # Install Docker
+          yum install -y docker
+          service docker start
+          usermod -a -G docker ec2-user
+          chkconfig docker on
+          
+          # Install Docker Compose for easier management
+          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
+          chmod +x /usr/local/bin/docker-compose
+          
+          # Create directories for Gremlin data and config
+          mkdir -p /home/ec2-user/gremlin-data
+          mkdir -p /home/ec2-user/gremlin-config
+          chown -R ec2-user:ec2-user /home/ec2-user/gremlin-data
+          chown -R ec2-user:ec2-user /home/ec2-user/gremlin-config
+          
+          # Create directories for Gremlin data
+          mkdir -p /home/ec2-user/gremlin-data
+          chown ec2-user:ec2-user /home/ec2-user/gremlin-data
+          
+          # Pull and start Gremlin Server container directly
+          docker pull tinkerpop/gremlin-server:latest
+          docker run \
+            --name gremlin-server \
+            --restart unless-stopped \
+            -p 8182:8182 \
+            --memory=300m \
+            -v /home/ec2-user/gremlin-data:/opt/gremlin-server/data \
+            -e JAVA_OPTIONS="-Xms32m -Xmx200m -server" \
+            tinkerpop/gremlin-server:latest
+          
+          # Create a simple health check script
+          cat > /home/ec2-user/health-check.sh << 'EOF'
+          #!/bin/bash
+          echo "Checking Gremlin Server status..."
+          docker ps | grep gremlin-server || echo "Container not running"
+          
+          echo "Testing HTTP endpoint..."
+          curl -s -X POST http://localhost:8182 \
+            -H "Content-Type: application/json" \
+            -d '{"gremlin":"g.V().count()"}' || echo "HTTP test failed"
+          EOF
+          
+          chmod +x /home/ec2-user/health-check.sh
+          chown ec2-user:ec2-user /home/ec2-user/health-check.sh
+          
+          # Install jq for JSON parsing
+          yum install -y jq
+          
+          # Signal that the instance is ready
+          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource GremlinServerInstance --region ${AWS::Region}
+
+    CreationPolicy:
+      ResourceSignal:
+        Count: 1
+        Timeout: PT10M
+
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              docker: []
+              jq: []
+          services:
+            sysvinit:
+              docker:
+                enabled: true
+                ensureRunning: true
+
+      Tags:
+        - Key: Name
+          Value: GremlinServer
+        - Key: Application
+          Value: TinkerPop
+
+  # Elastic IP (optional, for consistent IP address)
+  GremlinServerEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref GremlinServerInstance
+      Tags:
+        - Key: Name
+          Value: GremlinServerEIP
+
+Outputs:
+  InstanceId:
+    Description: Instance ID of the Gremlin Server
+    Value: !Ref GremlinServerInstance
+    Export:
+      Name: !Sub "${AWS::StackName}-InstanceId"
+
+  PublicIP:
+    Description: Public IP address of the Gremlin Server
+    Value: !Ref GremlinServerEIP
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicIP"
+
+  GremlinServerEndpoint:
+    Description: Gremlin Server WebSocket endpoint
+    Value: !Sub "ws://${GremlinServerEIP}:8182/gremlin"
+    Export:
+      Name: !Sub "${AWS::StackName}-GremlinEndpoint"
+
+  GremlinServerHTTP:
+    Description: Gremlin Server HTTP endpoint for testing
+    Value: !Sub "http://${GremlinServerEIP}:8182"
+    Export:
+      Name: !Sub "${AWS::StackName}-HTTPEndpoint"
+
+  SSHCommand:
+    Description: SSH command to connect to the instance
+    Value: !Sub "ssh -i ${KeyName}.pem ec2-user@${GremlinServerEIP}"
+
+  HealthCheckCommand:
+    Description: Command to run health check from the instance
+    Value: "./health-check.sh"
+    Export:
+      Name: !Sub "${AWS::StackName}-HealthCheck"
