@@ -1,0 +1,146 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: 'Digital Twins In Action - Data Persistence'
+
+Parameters:
+  DeploymentBucket:
+    Type: String
+    Description: The name of the bucket where the lambda source code is located
+
+  TableName:
+    Type: String
+    Description: Name for the DynamoDB table
+    Default: DTIASensorData
+    AllowedPattern: '[a-zA-Z0-9._-]+'
+    ConstraintDescription: Must contain only alphanumeric characters, periods, dashes, and underscores
+
+  SensorDataQueueName:
+    Type: String
+    Description: The URL of the SQS queue that decoded messages are published to
+    Default: DTIASensorDataQueue
+    AllowedPattern: '[a-zA-Z0-9._-]+'
+    ConstraintDescription: Must contain only alphanumeric characters, periods, dashes, and underscores
+
+  SensorDataDLQName:
+    Type: String
+    Description: The URL of the SQS queue that decoded messages are published to
+    Default: DTIASensorDataDLQ
+    AllowedPattern: '[a-zA-Z0-9._-]+'
+    ConstraintDescription: Must contain only alphanumeric characters, periods, dashes, and underscores
+
+  BatchSize:
+    Type: Number
+    Description: Number of messages Lambda processes in each batch
+    Default: 1
+    MinValue: 1
+    MaxValue: 10000
+
+  MaximumBatchingWindowInSeconds:
+    Type: Number
+    Description: Maximum time Lambda waits to collect a batch of messages
+    Default: 5
+    MinValue: 0
+    MaxValue: 300
+
+Resources:
+  # DynamoDB Table for storing sensor data
+  SensorDataTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Ref TableName
+      BillingMode: PAY_PER_REQUEST  # On-demand pricing for variable IoT workloads
+      AttributeDefinitions:
+        - AttributeName: partKey
+          AttributeType: S
+        - AttributeName: sortKey
+          AttributeType: N
+      KeySchema:
+        - AttributeName: partKey
+          KeyType: HASH    # Partition key
+        - AttributeName: sortKey
+          KeyType: RANGE   # Sort key
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true  # Enable backups for data protection
+      SSESpecification:
+        SSEEnabled: true  # Encrypt data at rest
+
+  # IAM Role for Lambda execution
+  LambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: DTIADataPersistorLambda-ExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: SQSAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - sqs:ReceiveMessage
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                Resource: 
+                  - !Sub arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${SensorDataQueueName}
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage  # For sending to DLQ if needed
+                Resource:
+                  - !Sub arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${SensorDataDLQName}
+        - PolicyName: DynamoDBAccessPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:PutItem
+                  - dynamodb:UpdateItem
+                  - dynamodb:GetItem
+                  - dynamodb:Query
+                  - dynamodb:BatchWriteItem
+                Resource: !GetAtt SensorDataTable.Arn
+      Tags:
+        - Key: Purpose
+          Value: DigitalTwinLambdaExecution
+
+  # Lambda Function for processing SQS messages
+  SensorDataProcessorFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: DTIADataPersistorLambda
+      Code:
+        S3Bucket: !Sub "${DeploymentBucket}"
+        S3Key: data_persistor_lambda.zip
+      Runtime: python3.13
+      Handler: data_persistor.lambda_handler
+      Role: !GetAtt LambdaExecutionRole.Arn
+      Timeout: 30  # 30 second timeout for batch processing
+      MemorySize: 256  # Sufficient for JSON processing and DynamoDB writes
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_NAME: !Ref SensorDataTable
+          QUEUE_URL: !Sub https://sqs.${AWS::Region}.amazonaws.com/${AWS::AccountId}/${SensorDataQueueName}
+
+  # Event Source Mapping to connect SQS to Lambda
+  SQSEventSourceMapping:
+    Type: AWS::Lambda::EventSourceMapping
+    Properties:
+      EventSourceArn: !Sub arn:aws:sqs:${AWS::Region}:${AWS::AccountId}:${SensorDataQueueName}
+      FunctionName: !GetAtt SensorDataProcessorFunction.Arn
+      BatchSize: !Ref BatchSize
+      MaximumBatchingWindowInSeconds: !Ref MaximumBatchingWindowInSeconds
+
+  # CloudWatch Log Group for Lambda function
+  LambdaLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/DTIADataPersistorLambda
+      RetentionInDays: 1

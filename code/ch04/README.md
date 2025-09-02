@@ -123,5 +123,22 @@ Finally you can run the sample code by running:
 python ch04_code09_biegel.py
 `
 
-#### Creating an Apache Tinkerpop Gremlin server running on EC2 in AWS
-I use an Apache Tinkerpop Gremlin server running on EC2 in my home digital twin to serve the graph database. The CloudFormation script in `gremlin-server.yml` will setup a publically accessible Gremlin database for you.
+## Deploying the data persistence code to AWS
+The CloudFormation stack defined in the file `persistence_cfn.yml` will deploy a Lambda that consumes sensor data events from the SQS queue where they are published by the message decoder you deployed in the chapter 2 code, and create the DynamoDB table where this timeseries sensor data is persisted.
+
+### Preparing the Lambda function code
+After you have made any modifications to the Lambda function code (for example to implement a decoder function for your specific LoRaWAN sensor payload), you must zip it up with the following command
+
+```
+zip data_persistor_lambda.zip data_persistor.py
+```
+Then upload the `data_persistor_lambda.zip` file to your S3 bucket.
+
+## Deploying the CloudFormation stack
+To deploy the stack, in the AWS console navigate to CloudFormation -> Stacks -> Create stack and select the CloudFormation template.
+
+## Creating a Memgraph server running on EC2 in AWS
+I use a Memgraph server running on EC2 in my home digital twin to serve the graph database. The CloudFormation script in `memgraph-server.yml` will setup a publically accessible Memgraph database for you.
+
+[!CAUTION]
+The CloudFormation script makes the EC2 server publically accessible. This is just for testing, be sure to change the 'AllowedCIDR' group from 0.0.0.0/0 (global access) to your specific IP address to only allow you to connect.

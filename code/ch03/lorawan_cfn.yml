@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Transform: AWS::Serverless-2016-10-31
 
-Description: Digital Twins in Action - Add LoRa Device
+Description: Digital Twins in Action - LoRaWAN Ingestion
 Parameters:
   DeploymentBucket:
     Type: String
@@ -9,20 +9,53 @@ Parameters:
 
   DevEUI:
     Type: String
-    Description: The device EUI of the Sensor
+    Description: The device EUI of the Sensor (update to your sensor value)
     Default: a840410b0189cfca
 
   AppKey:
     Type: String
-    Description: The app key of the Sensor
+    Description: The app key of the Sensor (update to your sensor value)
     Default: 593f7974447b46dcdde20bfe46275cb6
 
   AppEUI:
     Type: String
-    Description: The app EUI of the Sensor
+    Description: The app EUI of the Sensor (update to your sensor value)
     Default: a840410000000107
 
+  SensorDataQueueName:
+    Type: String
+    Description: The URL of the SQS queue that decoded messages are published to
+    Default: DTIASensorDataQueue
+    AllowedPattern: '[a-zA-Z0-9._-]+'
+    ConstraintDescription: Must contain only alphanumeric characters, periods, dashes, and underscores
+
+  SensorDataDLQName:
+    Type: String
+    Description: The URL of the SQS queue that decoded messages are published to
+    Default: DTIASensorDataDLQ
+    AllowedPattern: '[a-zA-Z0-9._-]+'
+    ConstraintDescription: Must contain only alphanumeric characters, periods, dashes, and underscores
+
+
 Resources:
+  # SQS Queue for storing enriched sensor data
+  SensorDataQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${SensorDataQueueName}
+      MessageRetentionPeriod: 1209600  # 14 days
+      ReceiveMessageWaitTimeSeconds: 20  # Enable long polling
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt SensorDataDeadLetterQueue.Arn
+        maxReceiveCount: 3
+
+  # Dead Letter Queue for failed messages
+  SensorDataDeadLetterQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub ${SensorDataDLQName}
+      MessageRetentionPeriod: 1209600  # 14 days
+
   DTIAIoTWirelessGatewayCertManagerRole:
     Type: "AWS::IAM::Role"
     Properties:
@@ -41,7 +74,8 @@ Resources:
   LogGroup:
     Type: 'AWS::Logs::LogGroup'
     Properties:
-      LogGroupName: !Sub "/aws/lambda/MessageDecoderLambda"
+      LogGroupName: /aws/lambda/DTIAMessageDecoderLambda
+      RetentionInDays: 1
 
   DTIADestinationRole:
     Type: "AWS::IAM::Role"
@@ -70,6 +104,7 @@ Resources:
   IamRoleLambdaExecution:
     Type: 'AWS::IAM::Role'
     Properties:
+      RoleName: DTIAMessageDecoderLambda-ExecutionRole
       AssumeRolePolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -82,7 +117,7 @@ Resources:
       Policies:
         - PolicyName: !Join 
             - '-'
-            - - MessageDecoderLambda
+            - - DTIAMessageDecoderLambda
               - lambda
           PolicyDocument:
             Version: 2012-10-17
@@ -91,36 +126,45 @@ Resources:
                 Action:
                   - 'logs:CreateLogStream'
                   - 'logs:CreateLogGroup'
+                  - 'logs:PutLogEvents'
                 Resource:
                   - !Sub >-
                     arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
               - Effect: Allow
                 Action:
-                  - 'logs:PutLogEvents'
-                Resource:
-                  - !Sub >-
-                    arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*:*
+                  - 'sqs:SendMessage'
+                  - 'sqs:GetQueueAttributes'
+                Resource: 
+                  - !GetAtt SensorDataQueue.Arn
       Path: /
-      RoleName: !Join 
-        - '-'
-        - - MessageDecoderLambdaFunction
-          - !Ref 'AWS::Region'
-          - lambdaRole
+      
 
-  MessageDecoderLambdaFunction:
+  DTIAMessageDecoderLambdaFunction:
     Type: 'AWS::Lambda::Function'
     Properties:
       Code:
         S3Bucket: !Sub "${DeploymentBucket}"
-        S3Key: lambda.zip
-      Handler: lambda_handler
+        S3Key: message_decoder_lambda.zip
+      Handler: message_decoder.lambda_handler
       Runtime: python3.13
-      FunctionName: MessageDecoderLambda
-      MemorySize: 3008
-      Timeout: 900
+      FunctionName: DTIAMessageDecoderLambda
+      MemorySize: 512
+      Timeout: 30
       Role: !GetAtt IamRoleLambdaExecution.Arn
+      Environment:
+        Variables:
+          SQS_QUEUE_URL: !Ref SensorDataQueue
     DependsOn:
       - LogGroup
+
+  # Permission for IoT Core to invoke Lambda
+  LambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref DTIAMessageDecoderLambdaFunction
+      Action: lambda:InvokeFunction
+      Principal: iot.amazonaws.com
+      SourceArn: !GetAtt LeakSensorOneTopicRule.Arn
 
   DeviceProfile:
     Type: AWS::IoTWireless::DeviceProfile
@@ -156,19 +200,19 @@ Resources:
         DevEui: !Sub "${DevEUI}"
         DeviceProfileId: !Ref DeviceProfile
         ServiceProfileId: !Ref ServiceProfile
-      Name: 'Indoor Temperature Humidity Sensor'
+      Name: 'Water leak sensor'
       Type: LoRaWAN
 
   LeakSensorOneTopicRule:
     Type: AWS::IoT::TopicRule
     Properties: 
-      RuleName: LeakSensorOneTopicRule
+      RuleName: DTIAHomeTopicRule
       TopicRulePayload: 
         AwsIotSqlVersion: '2016-03-23'
         Actions: 
           - Lambda:
-              FunctionArn: !GetAtt MessageDecoderLambdaFunction.Arn
-        Sql: SELECT topic(0) as topic, * AS topic from '#'
+              FunctionArn: !GetAtt DTIAMessageDecoderLambdaFunction.Arn
+        Sql: SELECT topic(0) as topic, * from 'home/#'
 
   DTIADestination:
     Type: AWS::IoTWireless::Destination

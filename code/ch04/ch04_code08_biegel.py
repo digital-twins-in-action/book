@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+Minimal self-contained Feast demo with temperature/humidity sensor features
+No external files required - generates data in-memory
+"""
+
 import pandas as pd
 from datetime import datetime, timedelta
 from feast import FeatureStore, Entity, FeatureView, Field, FileSource

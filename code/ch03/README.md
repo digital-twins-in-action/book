@@ -96,7 +96,7 @@ python ch03_code04_biegel.py
 ## Deploying the LoRa Sensor and collection hub code
 There is a CloudFormation stack in the following file that will set up the LoRaWAN network referenced in Chapter 3 of the book, and described in detail in Appendix A:
 
-`ch03_code00_biegel.yml`
+`lorawan_cfn.yml`
 
 This CloudFormation stack will create the following resources in AWS:
 
@@ -108,7 +108,7 @@ This CloudFormation stack will create the following resources in AWS:
 - A message decoder Lambda function
 - Two Identity and Access Management roles
 
-## Pre-requisites
+### Pre-requisites
 Before deploying this CloudFormation stack you will need:-
 
 - Access to an AWS account with permission to deploy CloudFormation stacks.
@@ -116,15 +116,15 @@ Before deploying this CloudFormation stack you will need:-
 - A LoRaWAN sensor that uses over the air activation (OTAA) e.g. this Dragino indoor temperature / humidity sensor https://www.dragino.com/products/temperature-humidity-sensor/item/199-lht52.html
 - An S3 bucket in your AWS account where you can upload the Lambda function code (the deployment bucket).
 
-## Preparing the Lambda function code
-After you have made any modifications to the Lambda function code (for example to implement a decoder function for your sepcific LoRaWAN sensor payload), you must zip it up with the following command
+### Preparing the Lambda function code
+After you have made any modifications to the Lambda function code (for example to implement a decoder function for your specific LoRaWAN sensor payload), you must zip it up with the following command
 
 ```
-zip lambda.zip message_decoder.py
+zip message_decoder_lambda.zip message_decoder.py
 ```
-Then upload the `lambda.zip` file to your S3 bucket.
+Then upload the `message_decoder_lambda.zip` file to your S3 bucket.
 
-## Deploying the CloudFormation stack
+### Deploying the CloudFormation stack
 To deploy the stack, in the AWS console navigate to CloudFormation -> Stacks -> Create stack and enter the the AppEUI, AppKey, DevEUI, and Deployment bucket values for your sensor and Lambda code as shown below.
 
 ![CloudFormation](images/cloudformation.png)

@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Apache TinkerPop Gremlin Server on EC2 Free Tier with Docker'
+Description: 'Memgraph Server on EC2 with Docker'
 
 Parameters:
   KeyName:
@@ -8,7 +8,7 @@ Parameters:
     ConstraintDescription: Must be the name of an existing EC2 KeyPair
 
   AllowedCidr:
-    Description: CIDR block for SSH and Gremlin Server access (use 0.0.0.0/0 for open access, but not recommended for production)
+    Description: CIDR block for SSH and Memgraph access (use 0.0.0.0/0 for open access, but not recommended for production)
     Type: String
     Default: '0.0.0.0/0'
     AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$'
@@ -25,10 +25,10 @@ Parameters:
 
 Resources:
   # Security Group
-  GremlinServerSecurityGroup:
+  MemgraphServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: Security group for Gremlin Server
+      GroupDescription: Security group for Memgraph Server
       SecurityGroupIngress:
         - IpProtocol: tcp
           FromPort: 22
@@ -36,13 +36,18 @@ Resources:
           CidrIp: !Ref AllowedCidr
           Description: SSH access
         - IpProtocol: tcp
-          FromPort: 8182
-          ToPort: 8182
+          FromPort: 7687
+          ToPort: 7687
           CidrIp: !Ref AllowedCidr
-          Description: Gremlin Server access
+          Description: Memgraph Bolt protocol access
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !Ref AllowedCidr
+          Description: Memgraph Lab web interface access
       Tags:
         - Key: Name
-          Value: GremlinServerSG
+          Value: MemgraphServerSG
 
   # IAM Role for EC2 (optional, for potential CloudWatch logging)
   EC2Role:
@@ -59,7 +64,7 @@ Resources:
         - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
       Tags:
         - Key: Name
-          Value: GremlinServerRole
+          Value: MemgraphServerRole
 
   # Instance Profile
   EC2InstanceProfile:
@@ -69,14 +74,14 @@ Resources:
         - !Ref EC2Role
 
   # EC2 Instance
-  GremlinServerInstance:
+  MemgraphServerInstance:
     Type: AWS::EC2::Instance
     Properties:
       InstanceType: !Ref InstanceType
       KeyName: !Ref KeyName
       ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}'
       SecurityGroupIds:
-        - !Ref GremlinServerSecurityGroup
+        - !Ref MemgraphServerSecurityGroup
       IamInstanceProfile: !Ref EC2InstanceProfile
       BlockDeviceMappings:
         - DeviceName: /dev/xvda
@@ -95,56 +100,39 @@ Resources:
           usermod -a -G docker ec2-user
           chkconfig docker on
           
-          # Install Docker Compose for easier management
-          curl -L "https://github.com/docker/compose/releases/latest/download/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-          chmod +x /usr/local/bin/docker-compose
+          # Create directories for Memgraph data
+          mkdir -p /home/ec2-user/memgraph-data
+          chown -R ec2-user:ec2-user /home/ec2-user/memgraph-data
           
-          # Create directories for Gremlin data and config
-          mkdir -p /home/ec2-user/gremlin-data
-          mkdir -p /home/ec2-user/gremlin-config
-          chown -R ec2-user:ec2-user /home/ec2-user/gremlin-data
-          chown -R ec2-user:ec2-user /home/ec2-user/gremlin-config
-          
-          # Create directories for Gremlin data
-          mkdir -p /home/ec2-user/gremlin-data
-          chown ec2-user:ec2-user /home/ec2-user/gremlin-data
-          
-          # Pull and start Gremlin Server container directly
-          docker pull tinkerpop/gremlin-server:latest
+          # Pull and start Memgraph Platform container
+          docker pull memgraph/memgraph-platform:latest
           docker run \
-            --name gremlin-server \
+            --name memgraph-platform \
             --restart unless-stopped \
-            -p 8182:8182 \
-            --memory=300m \
-            -v /home/ec2-user/gremlin-data:/opt/gremlin-server/data \
-            -e JAVA_OPTIONS="-Xms32m -Xmx200m -server" \
-            tinkerpop/gremlin-server:latest
+            -p 7687:7687 \
+            -p 3000:3000 \
+            -v /home/ec2-user/memgraph-data:/var/lib/memgraph \
+            memgraph/memgraph-platform:latest
           
           # Create a simple health check script
           cat > /home/ec2-user/health-check.sh << 'EOF'
           #!/bin/bash
-          echo "Checking Gremlin Server status..."
-          docker ps | grep gremlin-server || echo "Container not running"
+          echo "Checking Memgraph container status..."
+          docker ps | grep memgraph-platform || echo "Container not running"
           
-          echo "Testing HTTP endpoint..."
-          curl -s -X POST http://localhost:8182 \
-            -H "Content-Type: application/json" \
-            -d '{"gremlin":"g.V().count()"}' || echo "HTTP test failed"
+          echo "Checking Memgraph Lab web interface..."
+          curl -s http://localhost:3000 | grep -q "Memgraph Lab" && echo "Memgraph Lab is running" || echo "Memgraph Lab test failed"
+          
+          echo "Checking Memgraph database connection (requires mgconsole or a driver)..."
+          echo "The database is available on port 7687."
+          
           EOF
           
           chmod +x /home/ec2-user/health-check.sh
           chown ec2-user:ec2-user /home/ec2-user/health-check.sh
           
-          # Install jq for JSON parsing
-          yum install -y jq
-          
           # Signal that the instance is ready
-          /opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource GremlinServerInstance --region ${AWS::Region}
-
-    CreationPolicy:
-      ResourceSignal:
-        Count: 1
-        Timeout: PT10M
+          #/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource MemgraphServerInstance --region ${AWS::Region}
 
     Metadata:
       AWS::CloudFormation::Init:
@@ -152,7 +140,6 @@ Resources:
           packages:
             yum:
               docker: []
-              jq: []
           services:
             sysvinit:
               docker:
@@ -161,47 +148,47 @@ Resources:
 
       Tags:
         - Key: Name
-          Value: GremlinServer
+          Value: MemgraphServer
         - Key: Application
-          Value: TinkerPop
+          Value: Memgraph
 
   # Elastic IP (optional, for consistent IP address)
-  GremlinServerEIP:
+  MemgraphServerEIP:
     Type: AWS::EC2::EIP
     Properties:
-      InstanceId: !Ref GremlinServerInstance
+      InstanceId: !Ref MemgraphServerInstance
       Tags:
         - Key: Name
-          Value: GremlinServerEIP
+          Value: MemgraphServerEIP
 
 Outputs:
   InstanceId:
-    Description: Instance ID of the Gremlin Server
-    Value: !Ref GremlinServerInstance
+    Description: Instance ID of the Memgraph Server
+    Value: !Ref MemgraphServerInstance
     Export:
       Name: !Sub "${AWS::StackName}-InstanceId"
 
   PublicIP:
-    Description: Public IP address of the Gremlin Server
-    Value: !Ref GremlinServerEIP
+    Description: Public IP address of the Memgraph Server
+    Value: !Ref MemgraphServerEIP
     Export:
       Name: !Sub "${AWS::StackName}-PublicIP"
 
-  GremlinServerEndpoint:
-    Description: Gremlin Server WebSocket endpoint
-    Value: !Sub "ws://${GremlinServerEIP}:8182/gremlin"
+  MemgraphBoltEndpoint:
+    Description: Memgraph Bolt protocol endpoint for driver connections
+    Value: !Sub "bolt://${MemgraphServerEIP}:7687"
     Export:
-      Name: !Sub "${AWS::StackName}-GremlinEndpoint"
+      Name: !Sub "${AWS::StackName}-BoltEndpoint"
 
-  GremlinServerHTTP:
-    Description: Gremlin Server HTTP endpoint for testing
-    Value: !Sub "http://${GremlinServerEIP}:8182"
+  MemgraphLabEndpoint:
+    Description: Memgraph Lab web interface endpoint
+    Value: !Sub "http://${MemgraphServerEIP}:3000"
     Export:
-      Name: !Sub "${AWS::StackName}-HTTPEndpoint"
+      Name: !Sub "${AWS::StackName}-LabEndpoint"
 
   SSHCommand:
     Description: SSH command to connect to the instance
-    Value: !Sub "ssh -i ${KeyName}.pem ec2-user@${GremlinServerEIP}"
+    Value: !Sub "ssh -i ${KeyName}.pem ec2-user@${MemgraphServerEIP}"
 
   HealthCheckCommand:
     Description: Command to run health check from the instance
