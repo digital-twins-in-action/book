@@ -1,0 +1,20 @@
+{
+  "@id": "dtmi:com:dtia:Room;1", (1)
+  "@type": "Interface", (2)
+  "displayName": "Room",
+  "contents": [
+    {
+      "@type": "Property",
+      "name": "occupancyStatus",
+      "displayName": "Occupancy Status",
+      "schema": "boolean"
+    },
+    {
+      "@type": "Telemetry",
+      "name": "temperature",
+      "displayName": "Temperature",
+      "schema": "double"
+    }
+  ],
+  "@context": "dtmi:dtdl:context;3" (3)
+}

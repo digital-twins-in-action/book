@@ -4,24 +4,7 @@
 In this repository you will find the complete code samples from Chapter 4 of Digital Twins in Action where you learn about how to integrate different data sources and store data in a digital twin.
 
 ### Preparing to run the code
-The samples are written in Python and AWS CloudFormation. Some of the sample code uses example data also found in this repository. 
-To run the Python code, you will need a version of Python 3 installed on your system - the code has been tested with the latest release at the time of writing. Installers for Python are available from the Python website at https://www.python.org/. 
-
-I recommend using the *virtualenv* tool to create an isolated Python environment in which to run the code and isolate dependencies from your main Python installation. Since Python 3.3 a subset of virtualenv, known as *venv* has been integrated into the standard library.
-
-To create a virtual environment named *dtia*, type the following command:
-
-`python3 -m venv dtia`
-
-You can then activate the virtual environment by typing the following command
-
-`source dtia/bin/activate`
-
-The libraries that are required to run the code samples (including OCR and computer vision libraries) are defined in the requirements.txt file included in the books GitHub repository. To install the required libraries in your virtual environment, run the following command
-
-`pip install -r requirements.txt`
-
-You are now ready to run the code samples and adapt them to your own use case!
+Instructions on how to setup your Python environment and install dependencies is provided [here](../README.md). You will only need to do this once - all dependencies are included.s
 
 #### 4.1 Example of querying a relational database
 This example uses a simple SQLite database to demonstrate the concept of joining tables in a relational database using SQL. It loads data in the `maintenance.db` file in this directory and runs a query against it.
@@ -93,16 +76,8 @@ To run this example, execute the following command
 python ch04_code07_biegel.py
 `
 
-#### 4.8 An example of using the Feast feature store to store engineered features that can be used in ML models
-This example sets up a feature store in Feast and generates and stores some features from synthetic IoT sensor data to demonstrate the concept of a feature store.
 
-To run this example, execute the following command:
-
-`
-python ch04_code08_biegel.py
-`
-
-#### 4.9 An example of storing an querying timeseries data from DynamoDB
+#### 4.8 An example of storing an querying timeseries data from DynamoDB
 This example uses a local version of DynamoDB running in a Docker container so that you can run the example without the need to connect to AWS. 
 
 To start the local DynamoDB server run the following command:

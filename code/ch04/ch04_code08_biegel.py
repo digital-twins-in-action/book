@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """
 Minimal self-contained Feast demo with temperature/humidity sensor features
 No external files required - generates data in-memory
