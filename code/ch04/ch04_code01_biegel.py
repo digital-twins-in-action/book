@@ -1,33 +1,12 @@
-import sqlite3
-import pandas as pd
+my_pos = (0.1, 3) (1)
 
-try:
-    conn = sqlite3.connect('maintenance.db')
-    
-    # Run the target query
-    query = '''
-        SELECT WT.DESCRIPTION, WT.COMPLETED_DATE
-        FROM WORK_ORDER_TASK WT, WORK_ORDER W, ASSET A
-        WHERE WT.STATUS = 'COMPLETED'
-        AND WT.COMPLETED_BY = 'John Smith'
-        AND WT.COMPLETED_DATE <= W.SCHEDULED_DATE
-        AND WT.WORK_ORDER_ID = W.WORK_ORDER_ID
-        AND W.ASSET_ID = A.ASSET_ID
-        AND A.asset_id = 'F1'
-    '''
-    
-    print("Tasks completed on/before scheduled date for asset F1:")
-    results = pd.read_sql_query(query, conn)
-    
-    if results.empty:
-        print("No results found")
-    else:
-        print(results.to_string(index=False))
-    
-    conn.close()
-    
-except sqlite3.Error as e:
-    print(f"Database error: {e}")
-except FileNotFoundError:
-    print("Error: maintenance.db file not found")
-    print("Please ensure the database file exists in the current directory")
+sensors = [ (2)
+    {"id": "flow_meter_1", "name": "Rear garden tap", "pos": (0.839, 0.5)},
+    {"id": "flow_meter_2", "name": "Front garden tap", "pos": (0.875, 18.31)},
+    {"id": "water_main_meter", "name": "Main water meter", "pos": (3.13, 21.99)},
+]
+
+dist = lambda p1, p2: ((p2[0]-p1[0])**2 + (p2[1]-p1[1])**2)**0.5 (3)
+
+print("Sensors within 5m:")
+[print(f"- {s['name']}: {d:.1f}m") for s in sensors if (d := dist(my_pos, s['pos'])) <= 5]
