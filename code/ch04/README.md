@@ -129,7 +129,7 @@ python ch04_code10_biegel.py
 `
 
 ## Deploying the data persistence code to AWS
-The CloudFormation stack defined in the file `persistence_cfn.yml` will deploy a Lambda that consumes sensor data events from the SQS queue where they are published by the message decoder you deployed in the chapter 2 code, and create the DynamoDB table where this timeseries sensor data is persisted.
+The CloudFormation stack defined in the file `persistence_cfn.yml` will deploy a Lambda that consumes sensor data events from the SQS queue where they are published by the message decoder you deployed in the chapter 3 code, and create the DynamoDB table where this timeseries sensor data is persisted.
 
 ### Preparing the Lambda function code
 After you have made any modifications to the Lambda function code (for example to implement a decoder function for your specific LoRaWAN sensor payload), you must zip it up with the following command
