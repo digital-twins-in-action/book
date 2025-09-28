@@ -43,27 +43,31 @@ CREATE
 
 // Create HVAC Equipment and associated document
 (lr)<-[:locatedIn]-(ac:HVACEquipment {name: 'Air Conditioner'}),
-(ac)-[:hasDocument]->(sm1:Document {name: 'Service Manual'}),
+(ac)-[:hasDocument]->(sm1:Document {name: 'Service Manual', url: "https://www.mhiaa.com.au/support/user-manuals/"}),
 (ac)-[:hasDocument]->(mr1:Document {name: 'Maintenance Record'}),
+(ac)-[:hasImage]->(img:Image {url: '01_09_25_ac.jpg'}),
 
-(mtr)-[:hasDocument]->(sm2:Document {name: 'Service Manual'}),
+(mtr)-[:hasDocument]->(sm2:Document {name: 'Pool pump service manual', url: "https://davey.manymanuals.com/pumps/maxiflow-spa-pool-pump/user-manual-28835"}),
+
+(wm)-[:hasImage]->(img1:Image {url: '01_09_25_meter.jpg'}),
+(wm)-[:hasImage]->(img2:Image {url: '02_09_25_meter.jpg'}),
 
 // Create all Sensors and the nodes they serve
-(sp)<-[:serves]-(phs1:Sensor {name: 'ph_sensor_1'}),
-(em)<-[:serves]-(ps1:PowerSensor {name: 'power_meter_1'}),
-(wmach)<-[:serves]-(ps2:PowerSensor {name: 'power_meter_2'}),
-(mtr)<-[:serves]-(ps3:PowerSensor {name: 'power_meter_3'}),
-(ref)<-[:serves]-(ps4:PowerSensor {name: 'power_meter_4'}),
-(wm)<-[:serves]-(vfs1:VolumeFlowSensor {name: 'camera_sensor_1'}),
-(lr)<-[:serves]-(aqs:PM10AirQualitySensor {name: 'air_quality_sensor_1'}),
-(br1)<-[:serves]-(ts1:TemperatureSensor {name: 'temp_sensor_1', sensorId: 'a84041ce41845d13'}),
-(br2)<-[:serves]-(ts2:TemperatureSensor {name: 'temp_sensor_2'}),
+(sp)<-[:serves]-(phs1:Sensor {name: 'ph_sensor_1', x: 12.98, y: 2.8}),
+(em)<-[:serves]-(ps1:PowerSensor {name: 'power_meter_1', x: 9.66, y: 16.28}),
+(wmach)<-[:serves]-(ps2:PowerSensor {name: 'power_meter_2', x: 2.42, y: 7.99}),
+(mtr)<-[:serves]-(ps3:PowerSensor {name: 'power_meter_3', sensorId: '00137a1000013507', x: 15.23, y: 2.90}),
+(ref)<-[:serves]-(ps4:PowerSensor {name: 'power_meter_4', sensorId: '24e124148e423058', x: 2.42, y: 7.99}),
+(wm)<-[:serves]-(vfs1:VolumeFlowSensor {name: 'camera_sensor_1', x:3.13 , y: 21.99}),
+(lr)<-[:serves]-(aqs:PM10AirQualitySensor {name: 'air_quality_sensor_1', x: 10.77, y: 14.33}),
+(br1)<-[:serves]-(ts1:TemperatureSensor {name: 'temp_sensor_1', sensorId: 'a84041ce41845d13', x: 4.44, y: 1.22}),
+(br2)<-[:serves]-(ts2:TemperatureSensor {name: 'temp_sensor_2', sensorId: 'a84041dbf1850d33', x: 8.05, y: 3.75}),
 (br3)<-[:serves]-(ts3:TemperatureSensor {name: 'temp_sensor_3'}),
 (lr)<-[:serves]-(ts4:TemperatureSensor {name: 'temp_sensor_4', sensorId: '24e124710b423527'}),
 (l)<-[:serves]-(ts5:TemperatureSensor {name: 'temp_sensor_5', sensorId: 'a840411971871c86'}),
-(ot1)<-[:serves]-(vfs2:VolumeFlowSensor {name: 'flow_meter_2'}),
-(ot2)<-[:serves]-(vfs3:VolumeFlowSensor {name: 'flow_meter_3'}),
+(ot1)<-[:serves]-(vfs2:VolumeFlowSensor {name: 'flow_meter_2', x: 0.839, y: 0.5}),
+(ot2)<-[:serves]-(vfs3:VolumeFlowSensor {name: 'flow_meter_3', x: 0.75, y: 18.31}),
 (wmach)<-[:serves]-(vfs4:VolumeFlowSensor {name: 'flow_meter_4'}),
-(l)<-[:serves]-(ms1:PercentSensor {name: 'soil_moisture_sensor_1'}),
+(l)<-[:serves]-(ms1:PercentSensor {name: 'soil_moisture_sensor_1', x: 13.16, y: 22.51}),
 (l)<-[:serves]-(ms2:PercentSensor {name: 'soil_moisture_sensor_2'}),
-(rt)<-[:serves]-(ls1:PercentSensor {name: 'level_sensor_1'});
+(rt)<-[:serves]-(ls1:PercentSensor {name: 'level_sensor_1' });
