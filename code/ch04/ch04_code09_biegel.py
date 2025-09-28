@@ -1,7 +1,6 @@
 import pandas as pd
 from deltalake import DeltaTable, write_deltalake
-import os
-import shutil
+
 
 def main():
     table_path = "./delta_demo/sensor_data"
