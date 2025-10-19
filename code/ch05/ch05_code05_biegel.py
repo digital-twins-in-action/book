@@ -1,6 +1,5 @@
 import graphene, requests
-from flask import Flask
-from flask_graphql import GraphQLView
+from flask import Flask, request, jsonify
 
 
 class WeatherData(graphene.ObjectType):
@@ -13,9 +12,12 @@ class Query(graphene.ObjectType):
     weather = graphene.Field(WeatherData, city=graphene.String(required=True))
 
     def resolve_weather(self, info, city):
+        print(city)
         geo_data = requests.get(
             f"https://geocoding-api.open-meteo.com/v1/" f"search?name={city}&count=1"
         ).json()
+
+        print(geo_data)
 
         if not geo_data.get("results"):
             raise Exception(f"City '{city}' not found")
@@ -32,13 +34,18 @@ class Query(graphene.ObjectType):
         return WeatherData(**weather_data["hourly"])
 
 
+schema = graphene.Schema(query=Query)
 app = Flask(__name__)
-app.add_url_rule(
-    "/graphql",
-    view_func=GraphQLView.as_view(
-        "graphql", schema=graphene.Schema(query=Query), graphiql=True
-    ),
-)
+
+
+@app.route("/graphql", methods=["POST"])
+def graphql_server():
+    try:
+        result = schema.execute(request.get_json().get("query"))
+        return jsonify(result.data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 400
+
 
 if __name__ == "__main__":
     app.run(debug=True)

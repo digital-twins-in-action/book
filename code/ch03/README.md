@@ -4,7 +4,24 @@
 In this repository you will find the complete code samples from Chapter 3 of Digital Twins in Action where you learn about sensing changes in the physical world to keep your digital representation updated with changes.
 
 ### Preparing to run the code
-Instructions on how to setup your Python environment and install dependencies is provided [here](../README.md). You will only need to do this once - all dependencies are included.
+The samples are all written in Python. Some of the sample code uses example data also found in this repository. 
+To run the code, you will need a version of Python 3 installed on your system - the code has been tested with the latest release at the time of writing (3.13.7). Installers for Python are available from the Python website at https://www.python.org/. 
+
+I recommend using the *virtualenv* tool to create an isolated Python environment in which to run the code and isolate dependencies from your main Python installation. Since Python 3.3 a subset of virtualenv, known as *venv* has been integrated into the standard library.
+
+To create a virtual environment named *dtia_ch03*, type the following command:
+
+`python3 -m venv dtia_ch03`
+
+You can then activate the virtual environment by typing the following command
+
+`source dtia_ch03/bin/activate`
+
+The libraries that are required to run the chapter 3 code samples are defined in the requirements.txt file in this directory. To install the required libraries in your virtual environment, run the following command
+
+`pip install -r requirements.txt`
+
+You are now ready to run the code samples and adapt them to your own use case!
 
 #### 3.1 Analog to digital conversion example
 This example shows how an analog to digital convertor takes a continuously varying voltage from a capacitive sensor, and converts it into a digital value.

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>DTIA Sandpit</title>
+  <style>
+    body{margin:0;overflow:hidden}
+    canvas{display:block}
+    #loading-screen{position:absolute;top:0;left:0;right:0;bottom:0;color:#fff;display:flex;flex-direction:column;justify-content:center;align-items:center;font-family:sans-serif;font-size:1.2rem;transition:opacity .5s}
+    .spinner{border:4px solid rgba(255,255,255,.3);border-top:4px solid #fff;border-radius:50%;width:40px;height:40px;animation:spin 1s linear infinite;margin-top:10px}
+    @keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/OBJLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/MTLLoader.js"></script>
+</head>
+<body>
+  <div id="loading-screen">
+    Loading 3D Model...
+    <div class="spinner"></div>
+    <p style="margin-top:20px;font-size:.8rem;color:#aaa">(Use mouse to orbit and zoom)</p>
+  </div>
+  <script>
+    let scene,camera,renderer,controls;
+    const loadingScreen=document.getElementById('loading-screen'),
+        objModelUrl='https://3d.dtia.site/sandpile/obj/textured_output.obj',
+        mtlModelUrl=objModelUrl.replace('.obj','.mtl');
+    
+    function init(){
+      scene=new THREE.Scene();
+      scene.background=new THREE.Color(0x333333);
+      camera=new THREE.PerspectiveCamera(75,window.innerWidth/window.innerHeight,.1,1e3);
+      camera.position.z=5;
+      renderer=new THREE.WebGLRenderer({antialias:!0});
+      renderer.setSize(window.innerWidth,window.innerHeight);
+      document.body.appendChild(renderer.domElement);
+      scene.add(new THREE.AmbientLight(0xcccccc,.5));
+      const directionalLight=new THREE.DirectionalLight(0xffffff,1);
+      directionalLight.position.set(0,10,5);
+      scene.add(directionalLight);
+      controls=new THREE.OrbitControls(camera,renderer.domElement);
+      controls.enableDamping=!0;
+      controls.dampingFactor=.05;
+      window.addEventListener('resize',onWindowResize,!1);
+      loadOBJModel()
+    }
+    
+    function onWindowResize(){
+      camera.aspect=window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth,window.innerHeight)
+    }
+    
+    function onProgress(xhr){
+      loadingScreen.firstChild.textContent=`Loading 3D Model: ${Math.round(xhr.loaded/xhr.total*100)}%`
+    }
+    
+    function onError(error){
+      console.error('An error happened:',error);
+      loadingScreen.innerHTML='<h1>Error Loading Model!</h1><p>Check console for details.</p>'
+    }
+    
+    function finalizeModel(object){
+      const bbox=new THREE.Box3().setFromObject(object),center=bbox.getCenter(new THREE.Vector3()),size=bbox.getSize(new THREE.Vector3()),maxDim=Math.max(size.x,size.y,size.z);
+      object.scale.multiplyScalar(3/maxDim);
+      object.position.sub(center.multiplyScalar(3/maxDim));
+      object.position.y=-1;
+      scene.add(object);
+      loadingScreen.style.opacity='0';
+      setTimeout(()=>{loadingScreen.style.display='none'},500);
+      animate()
+    }
+    
+    function loadOBJModel(){
+      const objLoader=new THREE.OBJLoader(),mtlLoader=new THREE.MTLLoader();
+      mtlLoader.load(mtlModelUrl,materials=>{
+        materials.preload();
+        objLoader.setMaterials(materials);
+        objLoader.load(objModelUrl,finalizeModel,onProgress,onError)
+      })
+    }
+    
+    function animate(){
+      requestAnimationFrame(animate);
+      controls.update();
+      renderer.render(scene,camera)
+    }
+    
+    window.onload=init;
+  </script>
+</body>
+</html>

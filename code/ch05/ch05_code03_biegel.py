@@ -21,7 +21,6 @@ CREATE (thermo)-[:locatedIn]->(room)
 )
 
 # Run traversals
-# Run traversals
 print("=== Equipment on Level2 ===")
 c.execute(
     """

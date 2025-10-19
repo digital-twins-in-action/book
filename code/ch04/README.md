@@ -4,7 +4,24 @@
 In this repository you will find the complete code samples from Chapter 4 of Digital Twins in Action where you learn about how to integrate different data sources and store data in a digital twin.
 
 ### Preparing to run the code
-Instructions on how to setup your Python environment and install dependencies is provided [here](../README.md). You will only need to do this once - all dependencies are included.s
+The samples are all written in Python. Some of the sample code uses example data also found in this repository. 
+To run the code, you will need a version of Python 3 installed on your system - the code has been tested with the latest release at the time of writing (3.13.7). Installers for Python are available from the Python website at https://www.python.org/. 
+
+I recommend using the *virtualenv* tool to create an isolated Python environment in which to run the code and isolate dependencies from your main Python installation. Since Python 3.3 a subset of virtualenv, known as *venv* has been integrated into the standard library.
+
+To create a virtual environment named *dtia_ch04*, type the following command:
+
+`python3 -m venv dtia_ch04`
+
+You can then activate the virtual environment by typing the following command
+
+`source dtia_ch04/bin/activate`
+
+The libraries that are required to run the chapter 4 code samples are defined in the requirements.txt file in this directory. To install the required libraries in your virtual environment, run the following command
+
+`pip install -r requirements.txt`
+
+You are now ready to run the code samples and adapt them to your own use case!
 
 #### 4.1 Example of querying spatial data to find items in close proximity
 This example shows how you can use a simple Euclidian distance formula to find objects in a given proximity to a given point in local coordinate space (although you could project these local coordinates to UTM and use the same principle).
@@ -121,6 +138,13 @@ Once the container is running, you can load the sample data by running:
 `
 python populate_dynamo.py
 `
+
+
+dynamodump -m backup -r us-east-1 -s sensor-data 
+
+dynamodump -m restore -r local -s sensor-data --host 127.0.0.1 --port 8000  --region us-east-1 --dataOnly
+
+
 
 Finally you can run the sample code by running:
 
