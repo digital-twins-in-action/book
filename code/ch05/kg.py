@@ -1,7 +1,7 @@
 import requests
 import json
 
-API_KEY = "AIzaSyCriOLbIybC4pdNJYfTfYwFRAxaFggwJGw"
+API_KEY = ""
 
 
 def query_knowledge_graph(query_text):
