@@ -1,0 +1,61 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Digital Twin API
+
+Parameters:
+  MemgraphHost:
+    Type: String
+    Description: The hostname or IP address for the Memgraph instance.
+  MemgraphPort:
+    Type: String
+    Default: '7687'
+    Description: The port for the Memgraph instance.
+  MemgraphUser:
+    Type: String
+    Default: user
+    Description: The username for the Memgraph instance.
+  MemgraphPassword:
+    Type: String
+    Default: pass
+    Description: The password for the Memgraph instance.
+
+Resources:
+  GraphQLFlaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_handler.handle 
+      Runtime: python3.11
+      CodeUri: s3://gpb-deployment-860956/deployment_package.zip 
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          MEMGRAPH_HOST: !Ref MemgraphHost
+          MEMGRAPH_PORT: !Ref MemgraphPort
+          MEMGRAPH_USER: !Ref MemgraphUser
+          MEMGRAPH_PASSWORD: !Ref MemgraphPassword
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Sub "sensor-data"
+        - AWSLambdaBasicExecutionRole
+      Events:
+        ProxyApiRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref GraphQLApiGateway
+            Path: /{proxy+}
+            Method: ANY
+
+  GraphQLApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'*'"
+        AllowOrigin: "'*'"
+
+Outputs:
+  GraphQLServiceURL:
+    Description: "API Gateway Endpoint URL for the GraphQL server"
+    Value: !Sub "https://${GraphQLApiGateway}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

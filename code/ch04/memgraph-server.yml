@@ -6,25 +6,26 @@ Parameters:
     Description: Name of an existing EC2 KeyPair to enable SSH access
     Type: AWS::EC2::KeyPair::KeyName
     ConstraintDescription: Must be the name of an existing EC2 KeyPair
-
   AllowedCidr:
     Description: CIDR block for SSH and Memgraph access (use 0.0.0.0/0 for open access, but not recommended for production)
     Type: String
     Default: '0.0.0.0/0'
     AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$'
     ConstraintDescription: Must be a valid CIDR block
-
   InstanceType:
     Description: EC2 instance type (free tier eligible)
     Type: String
     Default: t3.micro
-    AllowedValues:
-      - t2.micro
-      - t3.micro
-    ConstraintDescription: Must be a free tier eligible instance type
+  Username:
+    Description: Username for Memgraph Server
+    Type: String
+    Default: user
+  Password:
+    Description: Password for Memgraph Server
+    Type: String
+    Default: pass
 
 Resources:
-  # Security Group
   MemgraphServerSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
@@ -93,6 +94,10 @@ Resources:
         Fn::Base64: !Sub |
           #!/bin/bash
           yum update -y
+
+          # Set vm.max_map_count for Memgraph
+          sysctl -w vm.max_map_count=262144
+          echo "vm.max_map_count=262144" >> /etc/sysctl.conf
           
           # Install Docker
           yum install -y docker
@@ -102,13 +107,16 @@ Resources:
           
           # Create directories for Memgraph data
           mkdir -p /home/ec2-user/memgraph-data
-          chown -R ec2-user:ec2-user /home/ec2-user/memgraph-data
+          sudo chown -R 101:101 /home/ec2-user/memgraph-data/
+          # chown -R ec2-user:ec2-user /home/ec2-user/memgraph-data
           
           # Pull and start Memgraph Platform container
           docker pull memgraph/memgraph-platform:latest
           docker run \
             --name memgraph-platform \
             --restart unless-stopped \
+            -e MEMGRAPH_USER="${Username}" \
+            -e MEMGRAPH_PASSWORD="${Password}" \
             -p 7687:7687 \
             -p 3000:3000 \
             -v /home/ec2-user/memgraph-data:/var/lib/memgraph \
@@ -145,12 +153,6 @@ Resources:
               docker:
                 enabled: true
                 ensureRunning: true
-
-      Tags:
-        - Key: Name
-          Value: MemgraphServer
-        - Key: Application
-          Value: Memgraph
 
   # Elastic IP (optional, for consistent IP address)
   MemgraphServerEIP:

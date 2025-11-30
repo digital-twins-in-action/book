@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Digital Twin AR - Kitchen Monitor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AR-js-org/AR.js/aframe/build/aframe-ar.js"></script>
+</head>
+<body style="margin: 0; overflow: hidden;">
+    <a-scene
+        embedded
+        arjs="sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;"
+        vr-mode-ui="enabled: false"
+        renderer="logarithmicDepthBuffer: true;">
+        
+        <a-entity camera></a-entity>
+        
+        <!-- Marker for Kitchen Refrigerator - barcode ID 1 -->
+        <a-marker type="barcode" value="1">
+            <a-text
+                value="REFRIGERATOR"
+                position="0 0.5 0"
+                rotation="-90 0 0"
+                align="center"
+                color="#00ff00"
+                width="10">
+            </a-text>
+            
+            <a-text
+                id="power-reading"
+                value="Power: Loading..."
+                position="0 0.5 -0.3"
+                rotation="-90 0 0"
+                align="center"
+                color="#ffff00"
+                width="8">
+            </a-text>
+            
+            <a-text
+                id="voltage-reading"
+                value="Voltage: Loading..."
+                position="0 0.5 -0.6"
+                rotation="-90 0 0"
+                align="center"
+                color="#00ffff"
+                width="8">
+            </a-text>
+            
+            <a-text
+                id="current-reading"
+                value="Current: Loading..."
+                position="0 0.5 -0.9"
+                rotation="-90 0 0"
+                align="center"
+                color="#ff00ff"
+                width="8">
+            </a-text>
+            
+            <a-text
+                id="energy-reading"
+                value="Energy: Loading..."
+                position="0 0.5 -1.2"
+
+                align="center"
+                color="#ffffff"
+                width="8">
+            </a-text>
+        </a-marker>
+    </a-scene>
+    
+    <script>
+        async function fetchSensorData() {
+            const now = new Date();
+            const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
+            
+            const query = `
+                query GetMeasures {
+                    spaces(
+                        space: "Kitchen"
+                        startDate: "${oneHourAgo.toISOString()}"
+                        endDate: "${now.toISOString()}"
+                    ) {
+                        name
+                        measurements {
+                            name
+                            values {
+                                timestamp
+                                value
+                            }
+                        }
+                    }
+                }
+            `;
+            
+            try {
+                const response = await fetch('http://127.0.0.1:5000/graphql', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query })
+                });
+                
+                const result = await response.json();
+                console.log('API Response:', result);
+                return result;
+            } catch (error) {
+                console.error('Failed to fetch data:', error);
+                return null;
+            }
+        }
+        
+function updateARDisplay(data) {
+    console.log('Update AR called');
+    console.log(data);
+        if (!data || !data.spaces || data.spaces.length === 0) {
+            console.log('No data available');
+            return;
+        }
+        
+        // Find the 'Kitchen' space data
+        const kitchenSpace = data.spaces.find(space => space.name === "Refrigerator");
+        if (!kitchenSpace) {
+            console.log("Space 'Kitchen' not found in API response.");
+            return;
+        }
+
+        const latestValues = {};
+        
+        // Populate latestValues, standardizing keys to lowercase
+        kitchenSpace.measurements.forEach(measurement => {
+            if (measurement.values && measurement.values.length > 0) {
+                // Find the latest value by timestamp (safer than assuming order)
+                const latest = measurement.values.reduce((prev, current) => {
+                    return (new Date(prev.timestamp) > new Date(current.timestamp)) ? prev : current;
+                });
+                
+                // Use a lowercase key for consistent lookup
+                latestValues[measurement.name.toLowerCase()] = latest.value;
+            }
+        });
+        
+        const powerEl = document.querySelector('#power-reading');
+        const powerVal = latestValues.power || latestValues.power_instantaneous; 
+        if (powerEl && powerVal !== undefined) {
+            const powerText = `Power: ${powerVal.toFixed(1)} W`;
+            powerEl.setAttribute('text', 'value', powerText); 
+            console.log('Updated power:', powerText);
+        }
+        
+        // Voltage
+        const voltageEl = document.querySelector('#voltage-reading');
+        const voltageVal = latestValues.voltage; 
+        if (voltageEl && voltageVal !== undefined) {
+            const voltageText = `Voltage: ${voltageVal.toFixed(1)} V`;
+            voltageEl.setAttribute('text', 'value', voltageText);
+            console.log('Updated voltage:', voltageText);
+        }
+        
+        // Current
+        const currentEl = document.querySelector('#current-reading');
+        const currentVal = latestValues.current;
+        if (currentEl && currentVal !== undefined) {
+            const currentText = `Current: ${(currentVal * 1000).toFixed(0)} mA`;
+            currentEl.setAttribute('text', 'value', currentText);
+            console.log('Updated current:', currentText);
+        }
+        
+        const energyEl = document.querySelector('#energy-reading');
+        const energyVal = latestValues.energyconsumption || latestValues.energy;
+        if (energyEl && energyVal !== undefined) {
+            // Convert from Wh (Watt-hours) to kWh (Kilowatt-hours)
+            const kWh = energyVal / 1000;
+            const energyText = `Energy: ${kWh.toFixed(2)} kWh`;
+            energyEl.setAttribute('text', 'value', energyText);
+            console.log('Updated energy:', energyText);
+        }
+    }
+    
+    // Wait for scene to fully load and start the interval
+    document.querySelector('a-scene').addEventListener('loaded', function () {
+        console.log('Scene loaded, fetching data...');
+        const updateData = () => {
+             fetchSensorData().then(data => {
+                if (data) updateARDisplay(data);
+             });
+        };
+        
+        updateData(); // Run once immediately
+        setInterval(updateData, 5000); // Update every 5 seconds
+    });
+</script>
+</body>
+</html>

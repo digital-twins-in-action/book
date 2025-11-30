@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cesium Scene</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    body,
+    #cesiumContainer {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
+
+    const viewer = new Cesium.Viewer("cesiumContainer");
+    Cesium.Cesium3DTileset.fromIonAssetId(3928190)
+      .then(function (tileset) {
+        viewer.scene.primitives.add(tileset);
+        return viewer.zoomTo(tileset).then(function () {
+          return tileset;
+        });
+      })
+      .then(function (tileset) {
+        tileset.pointCloudShading.attenuation = true;
+        tileset.pointCloudShading.eyeDomeLighting = true;
+        // Apply the default style if it exists
+        const extras = tileset.asset.extras;
+        if (
+          Cesium.defined(extras) &&
+          Cesium.defined(extras.ion) &&
+          Cesium.defined(extras.ion.defaultStyle)
+        ) {
+          tileset.style = new Cesium.Cesium3DTileStyle(extras.ion.defaultStyle);
+        }
+      })
+      .catch(function (error) {
+        console.log(error);
+      });
+  </script>
+</body>
+
+</html>

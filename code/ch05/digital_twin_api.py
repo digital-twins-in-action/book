@@ -14,7 +14,7 @@ from typing import Dict, Any
 try:
     dynamodb = boto3.client(
         "dynamodb",
-        endpoint_url="http://localhost:8000",
+        #        endpoint_url="http://localhost:8000",
         region_name="us-east-1",
     )
     print("Successfully connected to DynamoDB.")

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <script src="https://cdn.jsdelivr.net/npm/uplot@1/dist/uPlot.iife.min.js">
+    </script>
+    <link href="https://cdn.jsdelivr.net/npm/uplot@1/dist/uPlot.min.css" 
+      rel="stylesheet"/>
+  </head>
+  <body>
+    <div id="charts"></div>
+    <script>
+      (async () => { 
+        const query = `
+          query {
+            spaces(
+              space: "742 Evergreen Terrace", 
+              startDate: "2025-09-24T00:00:00Z", 
+              endDate: "2025-09-24T23:59:00Z"
+            ) { name measurements { name values { timestamp value } }
+            }
+          }
+        `;
+        
+        const resp = await fetch('http://127.0.0.1:5000/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query })
+        });
+        
+        const result = await resp.json();
+
+        console.log(result)
+
+        result.spaces.forEach(space => space.measurements.forEach(({ name, values }) => {
+          const chartsDiv = document.getElementById('charts'); 
+          const chartDiv = document.createElement('div');
+          chartsDiv.appendChild(chartDiv); 
+          
+          const timestamps = values.map(({ timestamp }) => parseInt(timestamp) / 1000);
+          const chartValues = values.map(({ value }) => parseFloat(value));
+          
+          new uPlot({
+            width: 200,
+            height: 30,
+            axes: [{ show: false }, { show: false }],
+            series: [{}, { stroke: "#0066cc", fill: "#3b82f619" }],
+            legend: { show: false },
+            cursor: { show: false }
+          }, [timestamps, chartValues], chartDiv);
+        }));
+      })();
+    </script>
+  </body>
+</html>
