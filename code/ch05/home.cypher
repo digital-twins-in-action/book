@@ -1,7 +1,7 @@
 // This script creates a graph data model for a house, including its physical structure, meters, and equipment.
 CREATE
 // Create the top-level Land node and its direct components
-(l:Land {name: '10 North St.'})<-[:isPartOf]-(h:Building {name: 'House', address: '10 North Ave'}),
+(l:Land {name: '742 Evergreen Terrace'})<-[:isPartOf]-(h:Building {name: 'House', address: '10 North Ave'}),
 (l)<-[:isPartOf]-(g:Garage {name: 'Garage'}),
 (l)<-[:isPartOf]-(sp:Space {name: 'Swimming pool'}),
 (l)<-[:locatedIn]-(rt:PlumbingStorageTank {name: 'Rainwater Tank'}),

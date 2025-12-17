@@ -1,0 +1,15 @@
+apiVersion: 1
+
+datasources:
+  - name: DTIA-GraphQL
+    type: yesoreyeram-infinity-datasource
+    uid: PF8760700818332B9
+    access: proxy
+    isDefault: true
+    jsonData:
+      modes:
+        - graphql
+      # Base URL for your API
+      url: http://host.docker.internal:5000/graphql
+      allowedHosts:
+        - http://host.docker.internal

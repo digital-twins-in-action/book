@@ -75,20 +75,9 @@ RETURN n, r;
 
 ![Home Graph](images/homeGraph.png)
 
-#### 5.4 Run a simple home thermal physics model
-This example shows a simple example of using a mathematical equation to model the thermal properties of a room in the house. It plots the output of the temperature change over time.
 
-To run this example, execute the following command
 
-`
-python ch05_code04_biegel.py
-`
-
-You should get the following output
-
-![Thermal model](images/thermalModel.png)
-
-#### 5.5 Run a GraphQL API
+#### 5.4 Run a GraphQL API
 This example runs the simple GraphQL API shown in the book that orchestrates calls to a geocoding API and the Open Meteo API to retrieve a 7 day weather forecast for a given city.
 
 To run this example, execute the following command
@@ -102,7 +91,7 @@ This will start the API. You can then run queries on the API using the cURL comm
 Here is a sample command to get the weather forecast for Perth:
 
 ```
-curl -X POST http://127.0.0.1:5000/graphql \
+curl -X POST http://127.0.0.1:6000/graphql \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{ weather(city: \"Perth\") { time rain surfaceTemperature } }"
@@ -130,7 +119,7 @@ python digital_twin_api.py
 Once you have the home API running, you can query it by POSTing data to the endpoint - an example query is shown below:
 
 ```
-curl -X POST http://127.0.0.1:5000/graphql \
+curl -X POST http://127.0.0.1:6000/graphql \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{ spaces(space: \"10 North St.\", startDate: \"2025-09-01T00:00:00Z\", endDate: \"2025-09-02T00:00:00Z\") { name measurements {name values {timestamp value}}} }"

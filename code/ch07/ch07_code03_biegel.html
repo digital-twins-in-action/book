@@ -28,6 +28,8 @@
           new Cesium.Matrix4()
         );
 
+      console.log(matrix().toString());
+
       (async () => {
         const viewer = new Cesium.Viewer("cesiumContainer", {
           terrain: Cesium.Terrain.fromWorldTerrain(),

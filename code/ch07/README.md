@@ -10,7 +10,7 @@ To run the code, you will need a version of Python 3 installed on your system - 
 
 I recommend using the *virtualenv* tool to create an isolated Python environment in which to run the code and isolate dependencies from your main Python installation. Since Python 3.3 a subset of virtualenv, known as *venv* has been integrated into the standard library.
 
-To create a virtual environment named *dtia_ch06*, type the following command:
+To create a virtual environment named *dtia_ch07*, type the following command:
 
 `python3 -m venv dtia_ch07`
 

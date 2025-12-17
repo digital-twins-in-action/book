@@ -9,12 +9,11 @@ from botocore.exceptions import ClientError
 import os
 from typing import Dict, Any
 
-# --- 1. Client Initialization ---
 # Initialize DynamoDB client
 try:
     dynamodb = boto3.client(
         "dynamodb",
-        #        endpoint_url="http://localhost:8000",
+        endpoint_url="http://localhost:8000",
         region_name="us-east-1",
     )
     print("Successfully connected to DynamoDB.")
@@ -40,7 +39,6 @@ except Exception as e:
     driver = None
 
 
-# --- 2. GraphQL Schema Definitions (Unchanged) ---
 class Measurement(ObjectType):
     sensor_id = String(required=True)
     timestamp = String(required=True)
@@ -98,7 +96,6 @@ class Query(ObjectType):
         if not driver or not dynamodb:
             print("Database connection not available.")
             return []
-        print("Here")
         # Neo4j: Use a session to run the query
         try:
             with driver.session() as session:
@@ -131,7 +128,7 @@ class Query(ObjectType):
         if not neo4j_results:
             return []
 
-        # Separate sensors, documents, and images from Neo4j results
+        # Separate sensors, documents, and images from results
         memgraph_sensors = (
             []
         )  # Keeping the variable name for minimal change in subsequent logic
@@ -394,4 +391,4 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=6000, debug=True)

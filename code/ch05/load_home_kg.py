@@ -1,9 +1,7 @@
 import mgclient
 
 # Connect and build graph
-conn = mgclient.connect(
-    host="3.212.87.218", port=7687, username="user", password="pass"
-)
+conn = mgclient.connect(host="localhost", port=7687, username="user", password="pass")
 conn.autocommit = True
 c = conn.cursor()
 
@@ -14,7 +12,7 @@ c.execute(
 // This script creates a graph data model for a house, including its physical structure, meters, and equipment.
 CREATE
 // Create the top-level Land node and its direct components
-(l:Land {name: '10 North St.'})<-[:isPartOf]-(h:Building {name: 'House', address: '742 Evergreen Terrace'}),
+(l:Land {name: '742 Evergreen Terrace'})<-[:isPartOf]-(h:Building {name: 'House', address: '742 Evergreen Terrace'}),
 (l)<-[:isPartOf]-(g:Garage {name: 'Garage'}),
 (l)<-[:isPartOf]-(sp:Space {name: 'Swimming pool'}),
 (l)<-[:locatedIn]-(rt:PlumbingStorageTank {name: 'Rainwater Tank'}),

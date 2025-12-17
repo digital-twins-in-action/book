@@ -1,77 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Cesium Scene</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
-    <style>
-      body, #cesiumContainer { margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100vh; }
-    </style>
-  </head>
-  <body>
-    <div id="cesiumContainer"></div>
-    <script>
-      Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
-      
-      const [lat, lon, height] = [-31.961505, 115.868492, -30];
 
-      const matrix = () => 
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cesium Scene</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
+  <style>
+    body,
+    #cesiumContainer {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="cesiumContainer"></div>
+  <script>
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
+
+    const [lat, lon, height] = [-31.961505, 115.868492, -30];
+
+    const matrix = () =>
+      Cesium.Matrix4.multiply(
+        Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(lon, lat, height)),
         Cesium.Matrix4.multiply(
-          Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(lon, lat, height)),
-          Cesium.Matrix4.multiply(
-            Cesium.Matrix4.fromScale(new Cesium.Cartesian3(0.01, 0.01, 0.01)),
-            Cesium.Matrix4.fromRotation(Cesium.Matrix3.fromRotationZ(-20 * Math.PI / 180)),
-            new Cesium.Matrix4()
-          ),
+          Cesium.Matrix4.fromScale(new Cesium.Cartesian3(0.01, 0.01, 0.01)),
+          Cesium.Matrix4.fromRotation(Cesium.Matrix3.fromRotationZ(-20 * Math.PI / 180)),
           new Cesium.Matrix4()
-        );
+        ),
+        new Cesium.Matrix4()
+      );
 
-(async () => {
-        // 1. Keep the globe enabled (default) to keep the atmosphere
-        const viewer = new Cesium.Viewer("cesiumContainer", {
-          terrain: undefined, 
-          baseLayerPicker: false,
-          timeline: true,
-          animation: false,
-        });
+    (async () => {
+      // 1. Keep the globe enabled (default) to keep the atmosphere
+      const viewer = new Cesium.Viewer("cesiumContainer", {
+        terrain: undefined,
+        baseLayerPicker: false,
+        timeline: true,
+        animation: false,
+      });
 
-        // viewer.imageryLayers.removeAll(); // Remove the default world map
-        // viewer.scene.globe.baseColor = Cesium.Color.TRANSPARENT; // Make the underlying sphere clear
+      // Hide the entire globe surface.
+      viewer.scene.globe.show = false;
 
-        // // Optional: Ensure lighting is good
-        // viewer.clock.currentTime = Cesium.JulianDate.fromIso8601("2025-11-27T12:00:00Z");
-        // viewer.scene.globe.showGroundAtmosphere = false;
-        // viewer.scene.globe.depthTestAgainstTerrain = false;
-        // --- THE DEFINITIVE FIX ---
-  
-  // 1. Hide the entire globe surface. This eliminates ALL interference.
-  viewer.scene.globe.show = false;
-  
-  // 2. Manually force the Sky Atmosphere to render.
-  // This gives you the blue sky effect without the ground ball.
-  viewer.scene.skyAtmosphere.show = true; 
-  
-  // --- END DEFINITIVE FIX ---
+      // Manually force the Sky Atmosphere to render.
+      // This gives you the blue sky effect without the ground ball.
+      viewer.scene.skyAtmosphere.show = true;
 
-// 3. Swapped OSM Buildings for Google Photorealistic 3D Tiles
-        const [googleTileset, customTileset] = await Promise.all([
-          Cesium.createGooglePhotorealistic3DTileset(),
-          Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/tiles/tileset.json")
-        ]);
 
-        customTileset.modelMatrix = matrix();
+      const [googleTileset, customTileset] = await Promise.all([
+        Cesium.createGooglePhotorealistic3DTileset(),
+        Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/tiles/tileset.json")
+      ]);
 
-        // 4. Add the Google Tileset to the primitives
-        viewer.scene.primitives.add(googleTileset);
-        viewer.scene.primitives.add(customTileset);
+      customTileset.modelMatrix = matrix();
 
-        viewer.scene.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200)
-        });
+      // 4. Add the Google Tileset to the primitives
+      viewer.scene.primitives.add(googleTileset);
+      viewer.scene.primitives.add(customTileset);
 
-      })();
-    </script>
-  </body>
+      viewer.scene.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200)
+      });
+
+    })();
+  </script>
+</body>
+
 </html>
