@@ -10,6 +10,6 @@ datasources:
       modes:
         - graphql
       # Base URL for your API
-      url: http://host.docker.internal:5000/graphql
+      url: http://host.docker.internal:6000/graphql
       allowedHosts:
         - http://host.docker.internal
