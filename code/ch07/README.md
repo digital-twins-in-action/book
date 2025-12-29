@@ -18,7 +18,7 @@ You can then activate the virtual environment by typing the following command
 
 `source dtia_ch07/bin/activate`
 
-The libraries that are required to run the chapter 6 code samples are defined in the requirements.txt file in this directory. To install the required libraries in your virtual environment, run the following command
+The libraries that are required to run the chapter 7 code samples are defined in the requirements.txt file in this directory. To install the required libraries in your virtual environment, run the following command
 
 `pip install -r requirements.txt`
 

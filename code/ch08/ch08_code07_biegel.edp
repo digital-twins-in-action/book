@@ -1,0 +1,60 @@
+// 1. Geometry and Mesh Definition
+real L = 1.0, H = 1.0; // Plate dimensions (1m x 1m square)
+int N = 50;            // Number of mesh divisions
+
+// Define the boundary segments with labels
+border a(t=0, L){ x=t; y=0; label=1; } // Bottom edge
+border b(t=0, H){ x=L; y=t; label=2; } // Right edge
+border c(t=L, 0){ x=t; y=H; label=3; } // Top edge
+border d(t=H, 0){ x=0; y=t; label=4; } // Left edge
+
+// Build the 2D mesh (Th)
+mesh Th = buildmesh(a(N) + b(N) + c(N) + d(N));
+
+//plot(Th, wait=1);
+//plot(Th, ps="grid.eps");
+
+// 2. Finite Element Space
+// Vh is the space of continuous piecewise linear (P1) functions on Th
+fespace Vh(Th, P1);
+Vh u, v; // u is the unknown temperature, v is the test function
+
+// 3. Problem Definition and Variational Form
+// Solve: -\Delta u = 0 (Laplace eq. with no internal heat source)
+
+// Boundary Conditions (Dirichlet on all sides):
+// Left (label 4): u = 100 degrees (HOT TWIN SIDE)
+// Bottom/Right/Top (labels 1, 2, 3): u = 0 degrees (COLD TWIN SIDES)
+func Thot = 22.0;
+func Tcold = 12.0;
+
+// Variational problem statement: Find u in Vh such that a(u, v) = l(v)
+// where a(u, v) = \int_{\Omega} \nabla u \cdot \nabla v \, d\Omega
+// and l(v) = 0 (since no internal source f=0)
+problem heat(u, v) =
+    int2d(Th)(
+        dx(u)*dx(v) + dy(u)*dy(v) // Bilinear form (Stiffness Matrix)
+    )
+    + on(4, u = Thot) // Essential/Dirichlet BC on Left edge (label 4)
+    + on(1, u = 5.0) // Essential/Dirichlet BC on Bottom edge (label 1)
+    + on(2, u = Tcold) // Essential/Dirichlet BC on Right edge (label 2)
+    + on(3, u = Tcold); // Essential/Dirichlet BC on Top edge (label 3)
+
+// 4. Solve and Plot
+heat; // Execute the solve
+//plot(u, grey=false, fill=true, value=true);
+plot(u, fill=true, value=true, ps="/data/heat_map.eps");
+
+// Create a file named 'heat_data.txt'
+ofstream f("/data/heat_data.txt");
+
+// Loop through all vertices (nodes) in the mesh
+for (int i = 0; i < Th.nv; i++) {
+    // Write: x-coord, y-coord, temperature
+    f << Th(i).x << " " << Th(i).y << " " << u(Th(i).x, Th(i).y) << endl;
+}
+
+// 5. Digital Twin Hook: Extract a "Virtual Sensor" reading
+// Get the temperature at the center of the plate (x=0.5, y=0.5)
+real ucenter = u(0.5, 0.5);
+cout << "Temperature at the center (0.5, 0.5): " << ucenter << " degrees." << endl;
