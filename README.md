@@ -11,4 +11,5 @@ This repository contains the code samples referenced in the book [Digital Twins 
 - [Chapter 6 - Data visualization and dashboards ](code/ch06/README.md)
 - [Chapter 7 - 3D visualization and spatial representation ](code/ch07/README.md)
 - [Chapter 8 - Predicting outcomes with simulation ](code/ch08/README.md)
+- [Chapter 9 - Integrating inference and intelligence ](code/ch09/README.md)
 - [Appendix B - Building a custom IoT sensor ](code/appendixb/README.md)
