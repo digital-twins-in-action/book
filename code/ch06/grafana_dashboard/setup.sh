@@ -36,19 +36,20 @@ wait_for_port $DYNAMODB_PORT "DynamoDB Local"
 
 # --- Step 2: Load Data to Memgraph ---
 echo "--- 2. Loading data to Memgraph using ${MEMGRAPH_LOAD_SCRIPT} ---"
+MEMGRAPH_LOAD_FAILED=false
 if [ -f "$MEMGRAPH_LOAD_SCRIPT" ]; then
     # Ensure dependencies for the script are met before running
     # You may need to run 'pip install -r requirements.txt' if your script has dependencies
     python "$MEMGRAPH_LOAD_SCRIPT"
     if [ $? -ne 0 ]; then
         echo "Error: Memgraph data loading failed."
-        # Keep services running for inspection, but alert the user
-        # exit 1 
+        MEMGRAPH_LOAD_FAILED=true
     else
         echo "Memgraph data loading complete."
     fi
 else
     echo "Warning: Memgraph load script '$MEMGRAPH_LOAD_SCRIPT' not found. Skipping data load."
+    MEMGRAPH_LOAD_FAILED=true
 fi
 
 
@@ -81,17 +82,38 @@ fi
 
 # --- Step 4: Load Data to DynamoDB Table ---
 echo "--- 4. Loading data to DynamoDB table: $DYNAMODB_TABLE_NAME ---"
-# NOTE: This step assumes you have dynamodump installed and your data is ready to restore.
-dynamodump -m restore -r local -s "$DYNAMODB_TABLE_NAME" --host "$DYNAMODUMP_HOST" --port "$DYNAMODB_PORT" --region "$DYNAMODB_REGION" --dataOnly
-if [ $? -ne 0 ]; then
-    echo "Error: DynamoDB data loading failed. Ensure 'dynamodump' is installed and data files are present."
+
+DYNAMODB_LOAD_FAILED=false
+# Check if dynamodump is installed
+if ! command -v dynamodump &> /dev/null; then
+    echo "Error: 'dynamodump' is not installed or not in PATH."
+    echo "Install it with: pip install dynamodump"
+    echo "(Make sure your virtual environment is activated before running this script)"
+    DYNAMODB_LOAD_FAILED=true
 else
-    echo "DynamoDB data loading complete."
+    dynamodump -m restore -r local -s "$DYNAMODB_TABLE_NAME" --host "$DYNAMODUMP_HOST" --port "$DYNAMODB_PORT" --region "$DYNAMODB_REGION" --dataOnly
+    if [ $? -ne 0 ]; then
+        echo "Error: DynamoDB data loading failed. Check that data files are present in ./sensor-data/"
+        DYNAMODB_LOAD_FAILED=true
+    else
+        echo "DynamoDB data loading complete."
+    fi
 fi
 
+# --- Summary ---
 echo "=========================================================="
-echo "✨ SETUP COMPLETE! All services are running and data loaded."
+echo "Services:"
+nc -z localhost $MEMGRAPH_PORT 2>/dev/null && echo "  ✓ Memgraph running on port $MEMGRAPH_PORT" || echo "  ✗ Memgraph NOT running"
+nc -z localhost $DYNAMODB_PORT 2>/dev/null && echo "  ✓ DynamoDB Local running on port $DYNAMODB_PORT" || echo "  ✗ DynamoDB Local NOT running"
+nc -z localhost 3000 2>/dev/null && echo "  ✓ Grafana running on port 3000" || echo "  ✗ Grafana NOT running"
+echo ""
+echo "Data loading:"
+[ "$MEMGRAPH_LOAD_FAILED" = true ] && echo "  ✗ Memgraph data load FAILED" || echo "  ✓ Memgraph data loaded"
+[ "$DYNAMODB_LOAD_FAILED" = true ] && echo "  ✗ DynamoDB data load FAILED" || echo "  ✓ DynamoDB data loaded"
 echo "=========================================================="
-echo "Memgraph UI (Lab): http://localhost:3000 (connects to Bolt on port 7687)"
+echo "Grafana:        http://localhost:3000 (default login: admin/admin)"
+echo "Memgraph:       bolt://localhost:7687 (use mgconsole or Python client)"
 echo "DynamoDB Local: http://localhost:8000 (accessible via AWS CLI/SDKs)"
-echo "To stop all services: 'docker compose down'"
+echo ""
+echo "To query Memgraph: docker exec -it memgraph mgconsole"
+echo "To stop all services: docker compose down"
