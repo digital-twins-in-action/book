@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AWS IoT MQTT Publisher (Cognito)</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        input, button {
+            font-size: 16px;
+            padding: 10px;
+            margin: 5px;
+        }
+        input {
+            width: 300px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #status {
+            margin-top: 20px;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .info {
+            background-color: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+<body>
+    <h1>🌡️ AWS IoT MQTT Publisher</h1>
+    <p>Secure authentication using AWS Cognito</p>
+    
+    <!-- Input field -->
+    <input type="number" 
+           id="sensorValue" 
+           placeholder="Enter sensor value (e.g., 23.5)" 
+           step="0.1">
+    
+    <!-- Send button -->
+    <button id="publishBtn" onclick="publishToAWS()" disabled>Connecting...</button>
+    
+    <!-- Status display -->
+    <div id="status" class="info">Initializing AWS Cognito...</div>
+
+    <!-- AWS SDK -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aws-sdk/2.1400.0/aws-sdk.min.js"></script>
+    
+    <script>
+        // ========================================
+        // CONFIGURATION - REPLACE WITH YOUR VALUES
+        // ========================================
+        const config = {
+            region: '',  // Your AWS region
+            
+            // From AWS Cognito Console
+            identityPoolId: '',  // Your Cognito Identity Pool ID
+            
+            // From AWS IoT Console → Settings
+            iotEndpoint: '',  // Your IoT endpoint
+            
+            // MQTT topic to publish to
+            topic: ''
+        };
+
+        // ========================================
+        // SETUP INSTRUCTIONS:
+        // ========================================
+        // 1. Create Cognito Identity Pool:
+        //    - Go to AWS Cognito Console
+        //    - Create Identity Pool with "Enable access to unauthenticated identities" checked
+        //    - Note the Identity Pool ID
+        //
+        // 2. Edit the IAM Role for unauthenticated identities:
+        //    - Add this policy to allow IoT publishing:
+        //    {
+        //      "Version": "2012-10-17",
+        //      "Statement": [{
+        //        "Effect": "Allow",
+        //        "Action": ["iot:Publish"],
+        //        "Resource": "arn:aws:iot:*:*:topic/sensors/*"
+        //      }]
+        //    }
+        //
+        // 3. Get your IoT endpoint:
+        //    aws iot describe-endpoint --endpoint-type iot:Data-ATS
+        //
+        // 4. Update the config object above with your values
+        // ========================================
+
+        let iotData = null;
+        let isConnected = false;
+
+        // Initialize AWS SDK with Cognito
+        function initializeAWS() {
+            // Configure AWS to use Cognito for authentication
+            AWS.config.region = config.region;
+            AWS.config.credentials = new AWS.CognitoIdentityCredentials({
+                IdentityPoolId: config.identityPoolId
+            });
+
+            // Get credentials
+            AWS.config.credentials.get(function(err) {
+                if (err) {
+                    showStatus('Failed to connect: ' + err.message, 'error');
+                    console.error('Cognito error:', err);
+                    return;
+                }
+
+                // Successfully got credentials
+                console.log('Cognito Identity ID:', AWS.config.credentials.identityId);
+                
+                // Create IoT Data client
+                iotData = new AWS.IotData({
+                    endpoint: config.iotEndpoint,
+                    region: config.region
+                });
+
+                isConnected = true;
+                document.getElementById('publishBtn').disabled = false;
+                document.getElementById('publishBtn').textContent = 'Send to AWS IoT';
+                showStatus('✅ Connected to AWS IoT via Cognito', 'success');
+            });
+
+            // Refresh credentials before they expire (Cognito tokens last 1 hour)
+            setInterval(function() {
+                AWS.config.credentials.refresh(function(err) {
+                    if (err) {
+                        console.error('Failed to refresh credentials:', err);
+                        showStatus('Connection lost. Please refresh the page.', 'error');
+                        isConnected = false;
+                    } else {
+                        console.log('Credentials refreshed');
+                    }
+                });
+            }, 3000000); // Refresh every 50 minutes
+        }
+
+        function publishToAWS() {
+            if (!isConnected) {
+                showStatus('Not connected to AWS IoT', 'error');
+                return;
+            }
+
+            const value = document.getElementById('sensorValue').value;
+            
+            if (!value) {
+                showStatus('Please enter a value', 'error');
+                return;
+            }
+
+            // Disable button during publish
+            document.getElementById('publishBtn').disabled = true;
+
+            // Create message payload
+            const message = {
+                value: parseFloat(value),
+                timestamp: new Date().toISOString(),
+                source: 'web-interface',
+                identityId: AWS.config.credentials.identityId  // Include who sent it
+            };
+
+            // Publish to MQTT topic
+            const params = {
+                topic: config.topic,
+                payload: JSON.stringify(message),
+                qos: 0
+            };
+
+            iotData.publish(params, function(err, data) {
+                document.getElementById('publishBtn').disabled = false;
+                
+                if (err) {
+                    showStatus('Error: ' + err.message, 'error');
+                    console.error('Publish error:', err);
+                    
+                    // If authentication error, try refreshing credentials
+                    if (err.code === 'CredentialsError' || err.code === 'ExpiredToken') {
+                        showStatus('Session expired. Refreshing...', 'info');
+                        AWS.config.credentials.refresh(function(refreshErr) {
+                            if (refreshErr) {
+                                showStatus('Please refresh the page', 'error');
+                            } else {
+                                showStatus('Session refreshed. Try again.', 'success');
+                            }
+                        });
+                    }
+                } else {
+                    showStatus(`✅ Sent value ${value} to topic ${config.topic}`, 'success');
+                    console.log('Published:', message);
+                    
+                    // Clear input for next value
+                    document.getElementById('sensorValue').value = '';
+                }
+            });
+        }
+
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+        }
+
+        // Allow Enter key to send
+        document.getElementById('sensorValue').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !document.getElementById('publishBtn').disabled) {
+                publishToAWS();
+            }
+        });
+
+        // Initialize when page loads
+        window.addEventListener('load', function() {
+            initializeAWS();
+        });
+
+    </script>
+</body>
+</html>

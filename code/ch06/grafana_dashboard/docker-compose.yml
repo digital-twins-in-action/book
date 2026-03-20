@@ -1,0 +1,59 @@
+services:
+  # ----------------------------------------
+  # Memgraph Graph Database Service
+  # ----------------------------------------
+  memgraph:
+    image: memgraph/memgraph-mage:latest
+    container_name: memgraph
+    ports:
+      - "7687:7687"
+      - "7444:7444"
+    # Uncomment to persist data
+    # volumes:
+    #   - memgraph_data:/var/lib/memgraph
+    healthcheck:
+      test: ["CMD-SHELL", "echo 'show databases;' | mgconsole"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------
+  # DynamoDB Local Service
+  # ----------------------------------------
+  dynamodb-local:
+    image: amazon/dynamodb-local
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    command: "-jar DynamoDBLocal.jar -inMemory -sharedDb"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8000 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ----------------------------------------
+  # Grafana Service (Added)
+  # ----------------------------------------
+  grafana:
+    image: grafana/grafana-oss
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./provisioning:/etc/grafana/provisioning
+      - ./dashboards:/var/lib/grafana/dashboards
+    environment:
+      # Installs the Infinity plugin automatically on startup
+      - GF_INSTALL_PLUGINS=yesoreyeram-infinity-datasource
+    # Allows Grafana to reach services running on the host machine (outside Docker)
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+# ----------------------------------------
+# Volumes
+# ----------------------------------------
+volumes:
+  # memgraph_data: # Uncomment if using memgraph persistence
+  # dynamodb_data: # Uncomment if using dynamodb persistence
+  grafana-storage: # Explicitly defined for Grafana persistence

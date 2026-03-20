@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Twin Viewer</title>
+
+    <link rel="stylesheet" href="css/main.css">
+
+    <!-- CesiumJS CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
+
+    <!-- uPlot CSS for data visualizations -->
+    <link href="https://cdn.jsdelivr.net/npm/uplot@1.6.32/dist/uPlot.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- App Header -->
+    <header class="app-header">
+        <div class="header-brand">
+            <svg class="header-logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2L2 7v10l10 5 10-5V7L12 2z" stroke="currentColor" stroke-width="1.5" fill="none"/>
+                <path d="M12 22V12" stroke="currentColor" stroke-width="1.5"/>
+                <path d="M22 7L12 12 2 7" stroke="currentColor" stroke-width="1.5"/>
+                <circle cx="12" cy="12" r="2" fill="currentColor" opacity="0.6"/>
+            </svg>
+            <div class="header-titles">
+                <h1 class="header-title">Digital Twin Viewer</h1>
+                <span class="header-subtitle">Real-time asset monitoring</span>
+            </div>
+        </div>
+        <div class="header-status" id="header-status">
+            <span class="status-dot"></span>
+            <span class="status-text">Connecting...</span>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Left Pane: Tree Browser -->
+        <div class="left-pane" id="tree-browser-pane">
+            <div class="tree-browser">
+                <div class="tree-header">
+                    <svg class="tree-header-icon" viewBox="0 0 16 16" fill="none">
+                        <path d="M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z" stroke="currentColor" stroke-width="1.2" rx="1"/>
+                    </svg>
+                    <span>Asset Hierarchy</span>
+                </div>
+                <div class="tree-container" id="tree-container">
+                    <div class="loading">Loading asset hierarchy...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Pane Container -->
+        <div class="right-pane" id="right-pane">
+            <!-- Top Right Pane: Scene Viewer -->
+            <div class="top-right-pane" id="scene-viewer-pane">
+                <div class="scene-viewer">
+                    <div class="cesium-container" id="cesium-container"></div>
+                </div>
+            </div>
+
+            <!-- Bottom Right Pane: Tabbed Panels -->
+            <div class="bottom-right-pane" id="data-panel-pane">
+                <div class="panel-tabs">
+                    <button class="panel-tab active" data-tab="sensor-data">
+                        <svg viewBox="0 0 16 16" fill="none"><path d="M3 12l3-4 3 2 4-6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                        Sensor Data
+                    </button>
+                    <button class="panel-tab" data-tab="simulate">
+                        <svg viewBox="0 0 16 16" fill="none"><path d="M2 12V6l4 3 4-6 4 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 4l4 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="1.5 2"/></svg>
+                        Simulate Outcomes
+                    </button>
+                    <button class="panel-tab" data-tab="predict">
+                        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+                        Predict Future
+                    </button>
+                </div>
+                <div class="panel-tab-content active" id="tab-sensor-data">
+                    <div class="data-panel">
+                        <div class="chart-container" id="chart-container">
+                            <div class="chart-placeholder">
+                                <svg class="placeholder-icon" viewBox="0 0 48 48" fill="none">
+                                    <rect x="4" y="4" width="40" height="40" rx="4" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M12 32l8-10 6 6 10-14" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <circle cx="12" cy="32" r="2" fill="currentColor"/>
+                                    <circle cx="20" cy="22" r="2" fill="currentColor"/>
+                                    <circle cx="26" cy="28" r="2" fill="currentColor"/>
+                                    <circle cx="36" cy="14" r="2" fill="currentColor"/>
+                                </svg>
+                                <span>Select an asset to view sensor data</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-tab-content" id="tab-simulate">
+                    <div class="simulate-panel" id="simulate-container"></div>
+                </div>
+                <div class="panel-tab-content" id="tab-predict">
+                    <div class="predict-panel" id="predict-container"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uplot@1.6.32/dist/uPlot.iife.min.js"></script>
+
+    <!-- Application Scripts -->
+    <script src="js/services/graphql-queries.js"></script>
+    <script src="js/services/graphql-client.js"></script>
+    <script src="js/components/split-panes.js"></script>
+    <script src="js/components/tree-browser.js"></script>
+    <script src="js/components/scene-viewer.js"></script>
+    <script src="js/components/data-panel.js"></script>
+    <script src="js/components/simulate-panel.js"></script>
+    <script src="js/components/predict-panel.js"></script>
+    <script src="js/main.js"></script>
+</body>
+
+</html>

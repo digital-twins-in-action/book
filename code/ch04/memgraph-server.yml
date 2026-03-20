@@ -1,0 +1,199 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Memgraph Server on EC2 with Docker'
+
+Parameters:
+  KeyName:
+    Description: Name of an existing EC2 KeyPair to enable SSH access
+    Type: AWS::EC2::KeyPair::KeyName
+    ConstraintDescription: Must be the name of an existing EC2 KeyPair
+  AllowedCidr:
+    Description: CIDR block for SSH and Memgraph access (use 0.0.0.0/0 for open access, but not recommended for production)
+    Type: String
+    Default: '0.0.0.0/0'
+    AllowedPattern: '^(\d{1,3}\.){3}\d{1,3}\/\d{1,2}$'
+    ConstraintDescription: Must be a valid CIDR block
+  InstanceType:
+    Description: EC2 instance type (free tier eligible)
+    Type: String
+    Default: t3.micro
+  Username:
+    Description: Username for Memgraph Server
+    Type: String
+    Default: user
+  Password:
+    Description: Password for Memgraph Server
+    Type: String
+    Default: pass
+
+Resources:
+  MemgraphServerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Security group for Memgraph Server
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedCidr
+          Description: SSH access
+        - IpProtocol: tcp
+          FromPort: 7687
+          ToPort: 7687
+          CidrIp: !Ref AllowedCidr
+          Description: Memgraph Bolt protocol access
+        - IpProtocol: tcp
+          FromPort: 3000
+          ToPort: 3000
+          CidrIp: !Ref AllowedCidr
+          Description: Memgraph Lab web interface access
+      Tags:
+        - Key: Name
+          Value: MemgraphServerSG
+
+  # IAM Role for EC2 (optional, for potential CloudWatch logging)
+  EC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Name
+          Value: MemgraphServerRole
+
+  # Instance Profile
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Roles:
+        - !Ref EC2Role
+
+  # EC2 Instance
+  MemgraphServerInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      ImageId: !Sub '{{resolve:ssm:/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2}}'
+      SecurityGroupIds:
+        - !Ref MemgraphServerSecurityGroup
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeType: gp3
+            VolumeSize: 30
+            DeleteOnTermination: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          yum update -y
+
+          # Set vm.max_map_count for Memgraph
+          sysctl -w vm.max_map_count=262144
+          echo "vm.max_map_count=262144" >> /etc/sysctl.conf
+          
+          # Install Docker
+          yum install -y docker
+          service docker start
+          usermod -a -G docker ec2-user
+          chkconfig docker on
+          
+          # Create directories for Memgraph data
+          mkdir -p /home/ec2-user/memgraph-data
+          sudo chown -R 101:101 /home/ec2-user/memgraph-data/
+          # chown -R ec2-user:ec2-user /home/ec2-user/memgraph-data
+          
+          # Pull and start Memgraph Platform container
+          docker pull memgraph/memgraph-platform:latest
+          docker run \
+            --name memgraph-platform \
+            --restart unless-stopped \
+            -e MEMGRAPH_USER="${Username}" \
+            -e MEMGRAPH_PASSWORD="${Password}" \
+            -p 7687:7687 \
+            -p 3000:3000 \
+            -v /home/ec2-user/memgraph-data:/var/lib/memgraph \
+            memgraph/memgraph-platform:latest
+          
+          # Create a simple health check script
+          cat > /home/ec2-user/health-check.sh << 'EOF'
+          #!/bin/bash
+          echo "Checking Memgraph container status..."
+          docker ps | grep memgraph-platform || echo "Container not running"
+          
+          echo "Checking Memgraph Lab web interface..."
+          curl -s http://localhost:3000 | grep -q "Memgraph Lab" && echo "Memgraph Lab is running" || echo "Memgraph Lab test failed"
+          
+          echo "Checking Memgraph database connection (requires mgconsole or a driver)..."
+          echo "The database is available on port 7687."
+          
+          EOF
+          
+          chmod +x /home/ec2-user/health-check.sh
+          chown ec2-user:ec2-user /home/ec2-user/health-check.sh
+          
+          # Signal that the instance is ready
+          #/opt/aws/bin/cfn-signal -e $? --stack ${AWS::StackName} --resource MemgraphServerInstance --region ${AWS::Region}
+
+    Metadata:
+      AWS::CloudFormation::Init:
+        config:
+          packages:
+            yum:
+              docker: []
+          services:
+            sysvinit:
+              docker:
+                enabled: true
+                ensureRunning: true
+
+  # Elastic IP (optional, for consistent IP address)
+  MemgraphServerEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      InstanceId: !Ref MemgraphServerInstance
+      Tags:
+        - Key: Name
+          Value: MemgraphServerEIP
+
+Outputs:
+  InstanceId:
+    Description: Instance ID of the Memgraph Server
+    Value: !Ref MemgraphServerInstance
+    Export:
+      Name: !Sub "${AWS::StackName}-InstanceId"
+
+  PublicIP:
+    Description: Public IP address of the Memgraph Server
+    Value: !Ref MemgraphServerEIP
+    Export:
+      Name: !Sub "${AWS::StackName}-PublicIP"
+
+  MemgraphBoltEndpoint:
+    Description: Memgraph Bolt protocol endpoint for driver connections
+    Value: !Sub "bolt://${MemgraphServerEIP}:7687"
+    Export:
+      Name: !Sub "${AWS::StackName}-BoltEndpoint"
+
+  MemgraphLabEndpoint:
+    Description: Memgraph Lab web interface endpoint
+    Value: !Sub "http://${MemgraphServerEIP}:3000"
+    Export:
+      Name: !Sub "${AWS::StackName}-LabEndpoint"
+
+  SSHCommand:
+    Description: SSH command to connect to the instance
+    Value: !Sub "ssh -i ${KeyName}.pem ec2-user@${MemgraphServerEIP}"
+
+  HealthCheckCommand:
+    Description: Command to run health check from the instance
+    Value: "./health-check.sh"
+    Export:
+      Name: !Sub "${AWS::StackName}-HealthCheck"

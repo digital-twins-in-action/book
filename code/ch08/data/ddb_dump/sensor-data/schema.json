@@ -1,0 +1,60 @@
+{
+  "Table": {
+    "AttributeDefinitions": [
+      {
+        "AttributeName": "partKey",
+        "AttributeType": "S"
+      },
+      {
+        "AttributeName": "sortKey",
+        "AttributeType": "N"
+      }
+    ],
+    "TableName": "sensor-data",
+    "KeySchema": [
+      {
+        "AttributeName": "partKey",
+        "KeyType": "HASH"
+      },
+      {
+        "AttributeName": "sortKey",
+        "KeyType": "RANGE"
+      }
+    ],
+    "TableStatus": "ACTIVE",
+    "CreationDateTime": "2025-06-13T20:37:39.278000+08:00",
+    "ProvisionedThroughput": {
+      "NumberOfDecreasesToday": 0,
+      "ReadCapacityUnits": 0,
+      "WriteCapacityUnits": 0
+    },
+    "TableSizeBytes": 8905994,
+    "ItemCount": 123769,
+    "TableArn": "arn:aws:dynamodb:us-east-1:102787342598:table/sensor-data",
+    "TableId": "a64c7839-43b0-4646-862c-eb6c767f7248",
+    "BillingModeSummary": {
+      "BillingMode": "PAY_PER_REQUEST",
+      "LastUpdateToPayPerRequestDateTime": "2025-06-13T20:37:39.278000+08:00"
+    },
+    "DeletionProtectionEnabled": false,
+    "WarmThroughput": {
+      "ReadUnitsPerSecond": 12000,
+      "WriteUnitsPerSecond": 4000,
+      "Status": "ACTIVE"
+    }
+  },
+  "ResponseMetadata": {
+    "RequestId": "8I3B773RG1J9737N697NG80EP7VV4KQNSO5AEMVJF66Q9ASUAAJG",
+    "HTTPStatusCode": 200,
+    "HTTPHeaders": {
+      "server": "Server",
+      "date": "Sat, 06 Dec 2025 05:48:23 GMT",
+      "content-type": "application/x-amz-json-1.0",
+      "content-length": "941",
+      "connection": "keep-alive",
+      "x-amzn-requestid": "8I3B773RG1J9737N697NG80EP7VV4KQNSO5AEMVJF66Q9ASUAAJG",
+      "x-amz-crc32": "819082311"
+    },
+    "RetryAttempts": 0
+  }
+}

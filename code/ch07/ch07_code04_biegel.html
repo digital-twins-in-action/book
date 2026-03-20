@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clean Cesium Scene</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #cesiumContainer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="cesiumContainer"></div>
+    <script>
+        // Set your Cesium ion access token (ensure this is a valid token)
+        Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
+
+        const COORDINATES = {
+            main: {
+                lat: -31.961505,
+                lon: 115.868492,
+                height: -31
+            },
+            pumphouse: {
+                lat: -31.961728,
+                lon: 115.868341,
+                height: -31
+            }
+        };
+
+        const TILESETS = [{
+            url: "https://3d.dtia.site/tiles/tileset.json",
+            config: COORDINATES.main,
+            scale: 0.01,
+            rotationZ: -20
+        }, {
+            url: "https://3d.dtia.site/pump/tileset.json",
+            config: COORDINATES.pumphouse,
+            scale: 1,
+            rotationZ: 0 
+        }, ];
+
+        const LOCAL_WAYPOINTS = [{
+            x: 15.23,
+            y: -2.9,
+            z: 10,
+            data: [10, 15, 13, 18, 22, 20, 25],
+            number: '241 W',
+            color: '#D31518'
+        }, {
+            x: 3.54,
+            y: -13.2,
+            z: 10,
+            data: [5, 8, 6, 12, 9, 14, 16, 15],
+            number: '105 W',
+            color: '#CCA000'
+        }, {
+            x: 10.77,
+            y: -14.33,
+            z: 10,
+            data: [100, 95, 98, 92, 88, 90],
+            number: '21 °C',
+            color: '#0060B1'
+        }, {
+            x: 8.05,
+            y: -3.75,
+            z: 10,
+            data: [20, 56, 67, 12, 88, 90],
+            number: '23 °C',
+            color: '#0060B1'
+        }];
+
+
+        /**
+         * Defines the coordinate system for all local waypoints.
+         * This uses the main site's location but at a fixed height/scale for a stable frame.
+         */
+        const BASE_TRANSFORM_MATRIX = createModelMatrix(
+            COORDINATES.main.lon,
+            COORDINATES.main.lat,
+            -39, // Fixed height for the base transform
+            1, // Base scale factor (no scaling)
+            -20 // Base rotation
+        );
+
+        // --- Helper Functions ---
+
+        /**
+         * Creates a model matrix for positioning and orienting a 3D Tileset or model.
+         * The transformation order is Translation (East-North-Up) * Rotation * Scale.
+         * @param {number} lon - Longitude in degrees.
+         * @param {number} lat - Latitude in degrees.
+         * @param {number} height - Height above ellipsoid.
+         * @param {number} scaleFactor - Uniform scaling factor.
+         * @param {number} rotationZDeg - Rotation around the Z-axis in degrees.
+         * @returns {Cesium.Matrix4} The resulting model matrix.
+         */
+        function createModelMatrix(lon, lat, height, scaleFactor, rotationZDeg = 0) {
+            const location = Cesium.Cartesian3.fromDegrees(lon, lat, height);
+            const translation = Cesium.Transforms.eastNorthUpToFixedFrame(location);
+
+            // Create rotation and scale matrices
+            const rotationMatrix = Cesium.Matrix4.fromRotation(
+                Cesium.Matrix3.fromRotationZ(rotationZDeg * Cesium.Math.RADIANS_PER_DEGREE)
+            );
+            const scaleMatrix = Cesium.Matrix4.fromScale(
+                new Cesium.Cartesian3(scaleFactor, scaleFactor, scaleFactor)
+            );
+
+            // Apply scale, then rotation, then combine with translation
+            const scaleAndRotation = Cesium.Matrix4.multiply(
+                rotationMatrix,
+                scaleMatrix,
+                new Cesium.Matrix4()
+            );
+
+            return Cesium.Matrix4.multiply(
+                translation,
+                scaleAndRotation,
+                new Cesium.Matrix4()
+            );
+        }
+
+        /**
+         * Converts a local cartesian coordinate (relative to BASE_TRANSFORM_MATRIX) 
+         * to a global Cartographic (lon, lat, height).
+         * @param {Cesium.Cartesian3} localCartesian - The local coordinate.
+         * @returns {{longitude: number, latitude: number, height: number}} The global coordinates in degrees and meters.
+         */
+        const localToGeographic = (localCartesian) => {
+            const worldPoint = Cesium.Matrix4.multiplyByPoint(
+                BASE_TRANSFORM_MATRIX,
+                localCartesian,
+                new Cesium.Cartesian3()
+            );
+            const cartographic = Cesium.Cartographic.fromCartesian(worldPoint);
+
+            return {
+                longitude: Cesium.Math.toDegrees(cartographic.longitude),
+                latitude: Cesium.Math.toDegrees(cartographic.latitude),
+                height: cartographic.height
+            };
+        };
+
+
+        /**
+         * Adds a 3D Tileset to the viewer.
+         * @param {Cesium.Viewer} viewer - The Cesium viewer instance.
+         * @param {TilesetConfig} tileConfig - Configuration object for the tileset.
+         */
+        async function addTileset(viewer, tileConfig) {
+            try {
+                const tileset = await Cesium.Cesium3DTileset.fromUrl(tileConfig.url);
+                tileset.modelMatrix = createModelMatrix(
+                    tileConfig.config.lon,
+                    tileConfig.config.lat,
+                    tileConfig.config.height,
+                    tileConfig.scale,
+                    tileConfig.rotationZ
+                );
+                // Enabling collision is generally the default, but leaving it explicit if needed.
+                // tileset.enableCollision = true; 
+                viewer.scene.primitives.add(tileset);
+                console.log(`Tileset loaded: ${tileConfig.url}`);
+            } catch (error) {
+                console.error(`Error loading tileset ${tileConfig.url}:`, error);
+            }
+        }
+
+        /**
+         * Creates an SVG pin with a sparkline and label, adding it to the viewer's entities.
+         * @param {Cesium.Viewer} viewer - The Cesium viewer instance.
+         * @param {Cesium.Cartesian3} position - The global position of the pin.
+         * @param {number[]} data - Array of values for the sparkline.
+         * @param {string} label - The label text for the pin.
+         * @param {string} color - The CSS color for the pin elements.
+         */
+        function createSVGPin(viewer, position, data, label, color = '#FF0000') {
+            const width = 120;
+            const height = 100;
+            const pinTopHeight = 70;
+            const sparklineWidth = 100;
+            const sparklineHeight = 30;
+            const sparklineX = 10;
+            const sparklineY = 15;
+
+            // Normalize data for sparkline
+            const max = Math.max(...data);
+            const min = Math.min(...data);
+            const range = max - min || 1; 
+
+            const points = data.map((value, index) => {
+                const x = sparklineX + (index / (data.length - 1)) * sparklineWidth;
+                // Invert Y to match SVG coordinate system (Y=0 is top)
+                const y = sparklineY + sparklineHeight - ((value - min) / range) * sparklineHeight; 
+                return `${x},${y}`;
+            }).join(' ');
+
+            const svg = `
+                <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+                    <defs>
+                        <filter id="shadow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur in="SourceAlpha" stdDeviation="2"/>
+                            <feOffset dx="0" dy="3" result="offsetblur"/>
+                            <feComponentTransfer>
+                                <feFuncA type="linear" slope="0.3"/>
+                            </feComponentTransfer>
+                            <feMerge>
+                                <feMergeNode/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <g filter="url(#shadow)">
+                        <rect x="10" y="10" width="${width - 20}" height="${pinTopHeight - 10}" 
+                              rx="8" ry="8" fill="white" stroke="${color}" stroke-width="3"/>
+                        
+                        <path d="M ${width/2} ${pinTopHeight} L ${width/2 - 10} ${pinTopHeight} 
+                                 L ${width/2} ${height} L ${width/2 + 10} ${pinTopHeight} Z" 
+                              fill="${color}"/>
+                        
+                        <polyline points="${points}" 
+                                  fill="none" 
+                                  stroke="${color}" 
+                                  stroke-width="2" 
+                                  stroke-linecap="round" 
+                                  stroke-linejoin="round"/>
+                        
+                        <text x="${width/2}" y="${sparklineY + sparklineHeight + 15}" 
+                              font-family="Arial" font-size="14" font-weight="bold" 
+                              fill="${color}" text-anchor="middle">
+                            ${label}
+                        </text>
+                    </g>
+                </svg>
+            `;
+
+            // Convert SVG string to a Blob URL for use as a billboard image
+            const blob = new Blob([svg], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+
+            return viewer.entities.add({
+                position: position,
+                billboard: {
+                    image: url,
+                    verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+                    // CLAMP_TO_GROUND ensures the pin sits on the terrain/tileset.
+                    heightReference: Cesium.HeightReference.CLAMP_TO_GROUND, 
+                    scale: 1.0
+                }
+            });
+        }
+
+        // --- Core Initialization Functions ---
+
+        /**
+         * Initializes the Cesium Viewer.
+         * @returns {Promise<Cesium.Viewer>} The initialized viewer instance.
+         */
+        async function initializeViewer() {
+            const viewer = new Cesium.Viewer("cesiumContainer", {
+                terrain: Cesium.Terrain.fromWorldTerrain(),
+            });
+
+            // Add default OSM buildings
+            const osmBuildingsTileset = await Cesium.createOsmBuildingsAsync();
+            viewer.scene.primitives.add(osmBuildingsTileset);
+
+            return viewer;
+        }
+
+        /**
+         * Loads all defined 3D Tilesets into the scene.
+         * @param {Cesium.Viewer} viewer - The Cesium viewer instance.
+         */
+        async function loadTilesets(viewer) {
+            const loadPromises = TILESETS.map(config => addTileset(viewer, config));
+            await Promise.all(loadPromises);
+        }
+
+        /**
+         * Converts local waypoints to global coordinates and creates SVG pins.
+         * @param {Cesium.Viewer} viewer - The Cesium viewer instance.
+         */
+        function createWaypoints(viewer) {
+            for (const wp of LOCAL_WAYPOINTS) {
+                const localCartesian = new Cesium.Cartesian3(wp.x, wp.y, wp.z);
+                const globalCoords = localToGeographic(localCartesian);
+                
+                const position = Cesium.Cartesian3.fromDegrees(
+                    globalCoords.longitude, 
+                    globalCoords.latitude, 
+                    globalCoords.height
+                );
+                
+                createSVGPin(viewer, position, wp.data, wp.number, wp.color);
+            }
+        }
+
+        /**
+         * Main function to set up the Cesium scene.
+         */
+        async function init() {
+            try {
+                // 1. Initialize Viewer and load base layers (like OSM buildings)
+                const viewer = await initializeViewer();
+                
+                // 2. Load custom tilesets
+                await loadTilesets(viewer);
+
+                // 3. Create interactive elements
+                createWaypoints(viewer);
+
+                viewer.scene.camera.flyTo({
+                    // Use a simple destination and let Cesium calculate the best orientation
+                    destination: Cesium.Cartesian3.fromDegrees(COORDINATES.main.lon, COORDINATES.main.lat, 200)
+                });
+
+            } catch (error) {
+                console.error('An error occurred during scene initialization:', error);
+            }
+        }
+        
+        // Start the application
+        init();
+    </script>
+</body>
+
+</html>

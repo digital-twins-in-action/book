@@ -1,0 +1,255 @@
+[{
+  "@id": "dtmi:digitaltwins:rec_3_3:core:Capability;1",
+  "@type": "Interface",
+  "contents": [
+    {
+      "@type": "Property",
+      "description": {
+        "en": "Time when a core:Capability's value was last updated (see core:lastValue)."
+      },
+      "displayName": {
+        "en": "last value time"
+      },
+      "name": "lastValueTime",
+      "schema": "dateTime",
+      "writable": true
+    },
+    {
+      "@type": "Relationship",
+      "description": {
+        "en": "The coverage or impact area of a given Asset or Sensor/Actuator. For example: an air-treatment unit might serve several Rooms or a full Building. Note that Assets can also service one another, e.g., an air-treatment Asset might serve an air diffuser Asset. Inverse of: servedBy"
+      },
+      "displayName": {
+        "en": "serves"
+      },
+      "name": "serves"
+    },
+    {
+      "@type": "Relationship",
+      "description": {
+        "en": "The entity (Asset, Space, LogicalDevice, etc.) that has this Capability. Inverse of: hasCapability"
+      },
+      "displayName": {
+        "en": "is capabilty of"
+      },
+      "name": "isCapabilityOf"
+    },
+    {
+      "@type": "Property",
+      "displayName": {
+        "en": "Custom Tags"
+      },
+      "name": "customTags",
+      "schema": {
+        "@type": "Map",
+        "mapKey": {
+          "name": "tagName",
+          "schema": "string"
+        },
+        "mapValue": {
+          "name": "tagValue",
+          "schema": "boolean"
+        }
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "displayName": {
+        "en": "External IDs"
+      },
+      "name": "externalIds",
+      "schema": {
+        "@type": "Map",
+        "mapKey": {
+          "name": "externalIdName",
+          "schema": "string"
+        },
+        "mapValue": {
+          "name": "externalIdValue",
+          "schema": "string"
+        }
+      },
+      "writable": true
+    },
+    {
+      "@type": "Property",
+      "displayName": {
+        "en": "name"
+      },
+      "name": "name",
+      "schema": "string",
+      "writable": true
+    }
+  ],
+  "description": {
+    "en": "A Capability indicates the capacity of an entity, be it a Space, an Asset, or a Device, to produce or ingest data. This is roughly equivalent to the established Brick Schema and generic BMS term \"point\". Specific subclasses specialize this behaviour: Sensor entities harvest data from the real world, Actuator entities accept commands from a digital twin platform, and Parameter entities configure some capability or system."
+  },
+  "displayName": {
+    "en": "Capability"
+  },
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+
+  {
+  "@id": "dtmi:digitaltwins:rec_3_3:core:Sensor;1",
+  "@type": "Interface",
+  "contents": [
+    {
+      "@type": "Relationship",
+      "description": {
+        "en": "Indicates the (optional) entity-of-interest of some sensor, i.e., what it is configured to observe or look for. This allows systems to perform graph propagation of sensor values, e.g., letting a temperature sensor that observes a given room set the temperature for that room. Inverse of: observedBy"
+      },
+      "displayName": {
+        "en": "observes"
+      },
+      "name": "observes"
+    }
+  ],
+  "description": {
+    "en": "Capability to detect or measure properties of the physical world."
+  },
+  "displayName": {
+    "en": "Sensor"
+  },
+  "extends": "dtmi:digitaltwins:rec_3_3:core:Capability;1",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+
+{
+  "@id": "dtmi:digitaltwins:rec_3_3:device:QuantitySensor;1",
+  "@type": "Interface",
+  "displayName": {
+    "en": "Quantity sensor"
+  },
+  "extends": "dtmi:digitaltwins:rec_3_3:core:Sensor;1",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+{
+  "@id": "dtmi:digitaltwins:rec_3_3:device:TemperatureSensor;1",
+  "@type": "Interface",
+  "contents": [
+    {
+      "@type": "Property",
+      "description": {
+        "en": "Most recently reported or set value of a core:Capability."
+      },
+      "displayName": {
+        "en": "last value"
+      },
+      "name": "lastValue",
+      "schema": "double",
+      "writable": true
+    }
+  ],
+  "displayName": {
+    "en": "Temperature sensor"
+  },
+  "extends": "dtmi:digitaltwins:rec_3_3:device:QuantitySensor;1",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+
+
+  {
+  "@id": "dtmi:digitaltwins:rec_3_3:core:Room;1",
+  "@type": "Interface",
+  "description": {
+    "en": "Base class for all more specific room types."
+  },
+  "displayName": {
+    "en": "Room"
+  },
+  "extends": "dtmi:digitaltwins:rec_3_3:core:Space;1",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+{
+  "@id": "dtmi:digitaltwins:rec_3_3:building:Bedroom;1",
+  "@type": "Interface",
+  "displayName": {
+    "en": "Bedroom"
+  },
+  "extends": "dtmi:digitaltwins:rec_3_3:core:Room;1",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+  {
+  "@id": "dtmi:digitaltwins:rec_3_3:core:Asset;1",
+  "@type": "Interface",
+  "contents": [
+
+        {
+      "@type": "Relationship",
+      "displayName": "located in",
+      "minMultiplicity": 0,
+        "maxMultiplicity": 1,
+      "name": "locatedIn",
+      "target": "dtmi:digitaltwins:rec_3_3:core:Space;1"
+    }
+  
+  ],
+  "description": "-",
+  "displayName": "Asset",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+{
+  "@id": "dtmi:digitaltwins:rec_3_3:core:Space;1",
+  "@type": "Interface",
+  "contents": [
+    {
+      "@type": "Property",
+      "description": "-",
+      "displayName": "-",
+      "name": "personOccupancy",
+      "schema": "integer",
+      "writable": true
+    },
+     {
+      "@type": "Relationship",
+      "name": "isPartOf",
+      "displayName": "PartOf",
+      "minMultiplicity": 0,
+      "maxMultiplicity": 1,
+      "target": "dtmi:digitaltwins:rec_3_3:core:Space;1"
+    }
+  ],
+  "description": "-",
+  "displayName": "Space",
+  "@context": [
+    "dtmi:dtdl:context;2"
+  ]
+},
+
+  
+  {
+  "@id": "dtmi:com:adt:dtia:home;1",
+  "@type": "Interface",
+  "@context": "dtmi:dtdl:context;2",
+  "displayName": "House",
+  "extends": "dtmi:digitaltwins:rec_3_3:core:Space;1",
+  "contents": []
+},
+{
+  "@id": "dtmi:com:adt:dtia:level;1",
+  "@type": "Interface",
+  "@context": "dtmi:dtdl:context;2",
+  "displayName": "Level",
+  "extends": "dtmi:digitaltwins:rec_3_3:core:Space;1",
+  "contents": [
+   
+  ]
+}
+
+]
