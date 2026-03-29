@@ -8,8 +8,8 @@ class SceneViewer {
         this.eventListeners = {};
         this.isInitialized = false;
         this.sensorMarkers = new Map();
-        //this.originCoords = [-31.961505, 115.868492, -31];
-        this.originCoords = [-31.961505, 115.868492, -30];
+        this.originCoords = [-31.961505, 115.868492, -31];
+        //this.originCoords = [-31.961505, 115.868492, -30];
         this.init();
     }
 
@@ -74,26 +74,26 @@ class SceneViewer {
             );
 
             // Hide the entire globe surface.
-            this.viewer.scene.globe.show = false;
+            //this.viewer.scene.globe.show = false;
 
             // Manually force the Sky Atmosphere to render.
             // This gives you the blue sky effect without the ground ball.
-            this.viewer.scene.skyAtmosphere.show = true;
+            //this.viewer.scene.skyAtmosphere.show = true;
 
 
-            const [googleTileset, customTileset] = await Promise.all([
-                Cesium.createGooglePhotorealistic3DTileset(),
-                Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/tiles/tileset.json")
-            ]);
-
-            // const [osmBuildings, customTileset] = await Promise.all([
-            //     Cesium.createOsmBuildingsAsync(),
+            // const [googleTileset, customTileset] = await Promise.all([
+            //     Cesium.createGooglePhotorealistic3DTileset(),
             //     Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/tiles/tileset.json")
             // ]);
 
+            const [osmBuildings, customTileset] = await Promise.all([
+                Cesium.createOsmBuildingsAsync(),
+                Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/tiles/tileset.json")
+            ]);
+
             customTileset.modelMatrix = matrix;
-            //this.viewer.scene.primitives.add(osmBuildings);
-            this.viewer.scene.primitives.add(googleTileset);
+            this.viewer.scene.primitives.add(osmBuildings);
+            // this.viewer.scene.primitives.add(googleTileset);
             this.viewer.scene.primitives.add(customTileset);
         } catch (error) {
             console.error('Failed to load 3D content:', error);

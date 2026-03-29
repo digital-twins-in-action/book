@@ -3,10 +3,6 @@ import matplotlib.pyplot as plt
 from sklearn.ensemble import HistGradientBoostingRegressor
 from sklearn.metrics import mean_absolute_error
 
-# # 1. Load Data
-# filename = "../datapipeline/home_feature_matrix.csv"
-# df = pd.read_csv(filename, index_col="datetime_perth", parse_dates=True)
-
 filename = "datapipeline/2025_export.parquet"
 df = pd.read_parquet(filename)
 
@@ -16,10 +12,8 @@ print(df.head(10))
 target_col = "f_temp_indoor"
 df = df.dropna(subset=[target_col])
 
-# 2. Define Features
+# Define Features
 feature_cols = [
-    "f_t_lag_1h",
-    "f_t_lag_2h",
     "f_t_lag_3h",  # Thermal Memory
     "f_temp_outdoor",
     "f_solar_norm",  # External Forcing
@@ -27,7 +21,6 @@ feature_cols = [
     "f_hour_cos",  # Time Context
 ]
 
-# 3. Chronological Split (Train on Past, Test on Future)
 split_date = "2025-11-01"
 train = df.loc[df.index < split_date].copy()
 test = df.loc[df.index >= split_date].copy()
@@ -35,18 +28,14 @@ test = df.loc[df.index >= split_date].copy()
 X_train, y_train = train[feature_cols], train[target_col]
 X_test, y_test = test[feature_cols], test[target_col]
 
-# 4. Train Model
-# HistGradientBoostingRegressor handles missing features (like solar at night) natively
-model = HistGradientBoostingRegressor(random_state=42)
+model = HistGradientBoostingRegressor(random_state=21)
 model.fit(X_train, y_train)
 
-# 5. Predict & Evaluate
 test["prediction"] = model.predict(X_test)
 mae = mean_absolute_error(test[target_col], test["prediction"])
 
 print(f"Mean Absolute Error (Normalized): {mae:.4f}")
 
-# 6. Visualize Forecast
 subset = test.loc["2025-11-01":"2025-11-07"]
 
 plt.figure(figsize=(10, 5))
@@ -56,10 +45,16 @@ plt.plot(
 plt.plot(
     subset.index,
     subset["prediction"],
-    label="AI Prediction",
+    label="Prediction",
     color="orange",
     linestyle="--",
 )
-plt.title(f"Indoor temperature prediction (MAE: {mae:.4f})")
-plt.legend()
+
+plt.xlabel("Date", fontsize=20, fontweight="bold")
+plt.ylabel("Temperature", fontsize=20, fontweight="bold")
+
+plt.tick_params(axis="both", labelsize=16)
+plt.legend(fontsize=16, framealpha=0.9)
+
+plt.tight_layout()
 plt.show()

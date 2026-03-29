@@ -1032,3 +1032,153 @@ body {
 
 .stat-value.positive { color: #dc2626; }
 .stat-value.negative { color: #16a34a; }
+
+/* ==========================================================================
+   Responsive — Mobile
+   ========================================================================== */
+@media (max-width: 768px) {
+    /* Let the page scroll vertically on mobile */
+    body {
+        overflow: auto;
+        height: auto;
+        min-height: 100vh;
+    }
+
+    /* Stack everything vertically */
+    .app-container {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+    }
+
+    /* Header: compact */
+    .app-header {
+        padding: 0 12px;
+        height: 44px;
+    }
+
+    .header-subtitle { display: none; }
+
+    .header-title { font-size: 14px; }
+
+    /* Hide Split.js gutters — we stack instead */
+    .gutter { display: none !important; }
+
+    /* Left pane: collapsed tree, fixed height */
+    .left-pane {
+        width: 100% !important;
+        min-width: 0;
+        height: auto;
+        max-height: 45vh;
+        overflow-y: auto;
+        border-right: none;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    /* Right pane: full width, natural height */
+    .right-pane {
+        width: 100% !important;
+        height: auto;
+    }
+
+    /* Scene viewer: fixed aspect ratio */
+    .top-right-pane {
+        width: 100% !important;
+        height: 50vw !important;
+        min-height: 220px;
+        max-height: 360px;
+    }
+
+    /* Bottom panel: natural height */
+    .bottom-right-pane {
+        width: 100% !important;
+        height: auto !important;
+        min-height: 400px;
+    }
+
+    /* Tabs: scrollable horizontally */
+    .panel-tabs {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 8px;
+    }
+
+    .panel-tab {
+        padding: 8px 10px;
+        font-size: 11px;
+    }
+
+    .panel-tab svg {
+        width: 12px;
+        height: 12px;
+    }
+
+    /* Measurement cards: single column */
+    .measurements-grid {
+        grid-template-columns: 1fr;
+        padding: 8px 10px 12px;
+        gap: 10px;
+    }
+
+    .simulate-results-grid,
+    .predict-results-grid {
+        grid-template-columns: 1fr;
+        padding: 8px 10px 12px;
+        gap: 10px;
+    }
+
+    .simulate-controls-row {
+        grid-template-columns: 1fr;
+    }
+
+    /* Stats grid: 2 columns on small screens */
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .predict-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    /* Space header: stack on very small screens */
+    .space-header {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 8px 12px;
+    }
+
+    /* Time range: scrollable */
+    .time-range-selector {
+        overflow-x: auto;
+        padding: 6px 10px;
+    }
+
+    .time-range-btn {
+        padding: 5px 10px;
+        font-size: 11px;
+    }
+
+    /* Chart placeholder */
+    .chart-placeholder, .chart-no-data {
+        font-size: 13px;
+        padding: 20px;
+    }
+
+    .placeholder-icon {
+        width: 36px;
+        height: 36px;
+    }
+
+    /* Scene overlays: smaller on mobile */
+    .scene-loading, .scene-error, .scene-no-data {
+        padding: 20px 24px;
+        max-width: 85vw;
+    }
+
+    /* Toast: full width */
+    .global-message {
+        right: 12px;
+        left: 12px;
+        max-width: none;
+    }
+}

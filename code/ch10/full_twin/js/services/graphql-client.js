@@ -66,7 +66,7 @@ class GraphQLClient {
         return result.tree;
     }
 
-    async getMeasures(spaceName, startDate = "2025-10-06T00:00:00Z", endDate = "2025-10-06T01:00:59Z") {
+    async getMeasures(spaceName, startDate = new Date(Date.now() - 3600000).toISOString(), endDate = new Date().toISOString()) {
         const q = GraphQLQueries.GET_MEASURES;
         const result = await this.query(q, { space: spaceName, startDate, endDate });
         return result.spaces;
