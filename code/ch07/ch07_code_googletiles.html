@@ -38,7 +38,7 @@
       );
 
     (async () => {
-      // 1. Keep the globe enabled (default) to keep the atmosphere
+      // Keep the globe enabled (default) to keep the atmosphere
       const viewer = new Cesium.Viewer("cesiumContainer", {
         terrain: undefined,
         baseLayerPicker: false,
@@ -61,7 +61,7 @@
 
       customTileset.modelMatrix = matrix();
 
-      // 4. Add the Google Tileset to the primitives
+      //Add the Google Tileset to the primitives
       viewer.scene.primitives.add(googleTileset);
       viewer.scene.primitives.add(customTileset);
 

@@ -152,33 +152,25 @@ function updateARDisplay(apiResponse) {
         }
     });
     
-    // --- Update the AR Text Entities ---
-
-    // Power
     const powerEl = document.querySelector('#power-reading');
     const powerVal = latestValues.power; 
     if (powerEl && powerVal !== undefined) {
         powerEl.setAttribute('text', 'value', `Power: ${powerVal.toFixed(1)} W`); 
     }
     
-    // Voltage
     const voltageEl = document.querySelector('#voltage-reading');
     const voltageVal = latestValues.voltage; 
     if (voltageEl && voltageVal !== undefined) {
         voltageEl.setAttribute('text', 'value', `Voltage: ${voltageVal.toFixed(1)} V`);
     }
     
-    // Current (Converting API's raw value, assuming it's Amps, to mA. If it's already mA, remove the * 1000)
     const currentEl = document.querySelector('#current-reading');
     const currentVal = latestValues.current;
     if (currentEl && currentVal !== undefined) {
-        // Looking at your data (e.g., 463.0), it might already be in mA! 
-        // If 463 is Amps, your fridge is melting. I'll leave your original math, but check this!
         const currentText = `Current: ${currentVal.toFixed(0)} mA`; 
         currentEl.setAttribute('text', 'value', currentText);
     }
     
-    // Energy
     const energyEl = document.querySelector('#energy-reading');
     const energyVal = latestValues.energyconsumption; // Matches the lowercase key
     if (energyEl && energyVal !== undefined) {

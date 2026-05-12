@@ -2,7 +2,7 @@
 
 def Xform "World"
 {
-    def Cube "MyCube"
+    def Cube "Cube"
     {
         double size = 2
         float3 xformOp:translate = (0, 0, 0)
