@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spatially located model</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Cesium.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/cesium/1.113.0/Widgets/widgets.css" rel="stylesheet">
+    <link href="styles.css" rel="stylesheet">
+  </head>
+  <body>
+    <div id="cesiumContainer"></div>
+    
+    <div id="weather-tooltip">
+      <div class="tooltip-card popup-card">
+        <div class="wt-header">Current Conditions</div>
+        <div class="wt-temp" id="wt-temp">--°</div>
+        <div class="wt-feels" id="wt-feels">Feels like --°</div>
+        <div class="wt-condition" id="wt-condition">--</div>
+        <div class="wt-row">
+          <div class="wt-stat">
+            <span class="wt-stat-label">Humidity</span>
+            <span class="wt-stat-value" id="wt-humidity">--%</span>
+          </div>
+          <div class="wt-stat">
+            <span class="wt-stat-label">Wind</span>
+            <span class="wt-stat-value" id="wt-wind">-- km/h</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div id="ui-container">
+      <button id="togglePumpBtn">Hide Pump Station</button>
+      <button id="measureBtn">📏 Measure</button>
+    </div>
+
+    <script type="module">
+      Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
+      import { initSensorPopups, sensorBaseMatrix } from './sensorPopup.js';
+      
+      const [lat, lon, height] = [-31.961505, 115.868492, -31];
+
+      const [stationLat, stationLon, stationHeight] = [-31.9007709911, 115.8641521352, 0];
+
+      const matrix = () => 
+        Cesium.Matrix4.multiply(
+          Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(lon, lat, height)),
+          Cesium.Matrix4.multiply(
+            Cesium.Matrix4.fromScale(new Cesium.Cartesian3(0.01, 0.01, 0.01)),
+            Cesium.Matrix4.fromRotation(Cesium.Matrix3.fromRotationZ(-20 * Math.PI / 180)),
+            new Cesium.Matrix4()
+          ),
+          new Cesium.Matrix4()
+        );
+
+      const stationMatrix = () => 
+        Cesium.Matrix4.multiply(
+          Cesium.Transforms.eastNorthUpToFixedFrame(Cesium.Cartesian3.fromDegrees(stationLon, stationLat, stationHeight)),
+          Cesium.Matrix4.multiply(
+            Cesium.Matrix4.fromScale(new Cesium.Cartesian3(0.01, 0.01, 0.01)),
+            Cesium.Matrix4.fromRotation(Cesium.Matrix3.fromRotationZ(-20 * Math.PI / 180)),
+            new Cesium.Matrix4()
+          ),
+          new Cesium.Matrix4()
+        );
+
+      (async () => {
+        const viewer = new Cesium.Viewer("cesiumContainer", {
+          terrain: Cesium.Terrain.fromWorldTerrain(),
+        });
+
+        const [osmBuildingsTileset, customTileset, pumpStationTileset] = await Promise.all([
+          Cesium.createOsmBuildingsAsync(),
+          Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/tiles/tileset.json"),
+          Cesium.Cesium3DTileset.fromUrl("http://localhost:8080/pump_station/tiles/tileset.json"),
+        ]);
+
+        customTileset.modelMatrix = matrix();
+        viewer.scene.primitives.add(osmBuildingsTileset);
+        viewer.scene.primitives.add(customTileset);
+        viewer.scene.primitives.add(pumpStationTileset);
+
+        // --- Button Toggle Logic ---
+        const toggleBtn = document.getElementById('togglePumpBtn');
+        toggleBtn.addEventListener('click', () => {
+          // Toggle the boolean visibility state
+          pumpStationTileset.show = !pumpStationTileset.show;
+          
+          // Update the button text to match current state
+          if (pumpStationTileset.show) {
+            toggleBtn.textContent = "Hide Pump Station";
+          } else {
+            toggleBtn.textContent = "Show Pump Station";
+          }
+        });
+
+        viewer.scene.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200)
+        });
+
+        initSensorPopups(viewer, {
+          baseMatrix: sensorBaseMatrix(stationLon, stationLat),
+          space: 'Pump Station',
+        });
+
+        const WX_LAT = -31.899654231251176, WX_LON = 115.86397059521151;
+        const WMO_CODES = {
+          0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+          45:'Fog',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+          61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',
+          80:'Light showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',
+          96:'Thunderstorm & hail',99:'Thunderstorm & heavy hail'
+        };
+
+        async function fetchWeather() {
+          const params = 'temperature_2m,apparent_temperature,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,is_day';
+          const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${WX_LAT}&longitude=${WX_LON}&current=${params}&wind_speed_unit=kmh`);
+          const data = await res.json();
+          const c = data.current;
+          document.getElementById('wt-temp').textContent = `${Math.round(c.temperature_2m)}°C`;
+          document.getElementById('wt-feels').textContent = `Feels like ${Math.round(c.apparent_temperature)}°C`;
+          document.getElementById('wt-condition').textContent = WMO_CODES[c.weather_code] ?? `Code ${c.weather_code}`;
+          document.getElementById('wt-humidity').textContent = `${c.relative_humidity_2m}%`;
+          document.getElementById('wt-wind').textContent = `${Math.round(c.wind_speed_10m)} km/h`;
+        }
+        fetchWeather();
+
+        const tooltip = document.getElementById('weather-tooltip');
+        const wxPos = Cesium.Cartesian3.fromDegrees(WX_LON, WX_LAT);
+
+        viewer.scene.postRender.addEventListener(() => {
+          const camDist = Cesium.Cartesian3.distance(viewer.scene.camera.position, wxPos);
+          const screenPos = camDist < 2000 && Cesium.SceneTransforms.wgs84ToWindowCoordinates(viewer.scene, wxPos);
+          if (screenPos) {
+            tooltip.style.display = 'block';
+            tooltip.style.left = `${screenPos.x}px`;
+            tooltip.style.top = `${screenPos.y}px`;
+          } else {
+            tooltip.style.display = 'none';
+          }
+        });
+
+        const measureBtn = document.getElementById('measureBtn');
+        const measureHandler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+        const fmt = m => m >= 1000 ? `${(m / 1000).toFixed(2)} km` : `${Math.round(m)} m`;
+        const pick = pos => viewer.scene.globe.pick(viewer.camera.getPickRay(pos), viewer.scene);
+
+        let pts = [], entities = [];
+
+        function reset() {
+          entities.forEach(e => viewer.entities.remove(e));
+          entities = []; pts = [];
+          measureBtn.classList.remove('active');
+          measureBtn.textContent = '📏 Measure';
+          viewer.canvas.style.cursor = '';
+        }
+
+        measureBtn.addEventListener('click', () => {
+          if (measureBtn.classList.contains('active')) { reset(); return; }
+          measureBtn.classList.add('active');
+          measureBtn.textContent = '✕ Clear';
+          viewer.canvas.style.cursor = 'crosshair';
+        });
+
+        measureHandler.setInputAction(({ position }) => {
+          if (!measureBtn.classList.contains('active')) return;
+          const pos = pick(position);
+          if (!pos) return;
+
+          entities.push(viewer.entities.add({
+            position: pos,
+            point: { pixelSize: 9, color: Cesium.Color.WHITE, outlineColor: Cesium.Color.fromCssColorString('#1a6b3c'), outlineWidth: 2 }
+          }));
+          pts.push(pos);
+
+          if (pts.length === 2) {
+            const dist = Cesium.Cartesian3.distance(pts[0], pts[1]);
+            const mid = Cesium.Cartesian3.midpoint(pts[0], pts[1], new Cesium.Cartesian3());
+            entities.push(viewer.entities.add({
+              polyline: { positions: pts, width: 2, material: new Cesium.PolylineDashMaterialProperty({ color: Cesium.Color.WHITE }), clampToGround: true }
+            }));
+            entities.push(viewer.entities.add({
+              position: mid,
+              label: {
+                text: fmt(dist),
+                font: 'bold 14px -apple-system, sans-serif',
+                fillColor: Cesium.Color.WHITE,
+                outlineColor: Cesium.Color.BLACK, outlineWidth: 3,
+                style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+                pixelOffset: new Cesium.Cartesian2(0, -16),
+                disableDepthTestDistance: Number.POSITIVE_INFINITY,
+                showBackground: true,
+                backgroundColor: Cesium.Color.fromCssColorString('rgba(15,20,30,0.82)'),
+                backgroundPadding: new Cesium.Cartesian2(8, 5)
+              }
+            }));
+            // Auto-exit after second point
+            measureBtn.classList.remove('active');
+            measureBtn.textContent = '📏 Measure';
+            viewer.canvas.style.cursor = '';
+            pts = []; // ready for a fresh measurement next time
+          }
+        }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+      })();
+    </script>
+  </body>
+</html>
