@@ -39,9 +39,10 @@ You are now ready to run the code samples and adapt them to your own use case!
 #### 9.0 Running the data pipeline
 The data pipeline described in figure 9.1 in chapter 9 is implemented in the file [here](datapipeline/pipeline.py). To run the pipeline, execute the following command from within the datapipeline directory:
 
-`
+```
+cd datapipeline
 python pipeline.py
-`
+```
 
 The pipeline will output a CSV file (that you can read with a spreadsheet viewer like Excel), and a Parquet file that is used by later AI/ML models. You will find both of these files checked in to GitHub too.
 
