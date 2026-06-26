@@ -24,18 +24,16 @@ def create_knowledge_base():
 
 
 def ask_digital_twin(question, vectorstore):
-    llm = ChatAnthropic(model="claude-sonnet-4-20250514", temperature=0)
+    llm = ChatAnthropic(model="claude-sonnet-4-6", temperature=0)
 
-    prompt = ChatPromptTemplate.from_template(
-        """
+    prompt = ChatPromptTemplate.from_template("""
     Answer the user's question based ONLY on the following context:
     <context>
     {context}
     </context>
     
     Question: {input}
-    """
-    )
+    """)
 
     document_chain = create_stuff_documents_chain(llm, prompt)
     retriever = vectorstore.as_retriever()

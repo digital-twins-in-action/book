@@ -200,7 +200,7 @@ def run_pipeline(files):
     # Final Alignment
     merged = pd.concat([df_rooms] + others, axis=1).sort_index()
 
-    print("4. Generating ML features (f_ prefix)...")
+    print("Generating ML features (f_ prefix)...")
     merged = add_ml_features(merged)
 
     # Final Formatting for Perth/Singapore alignment
@@ -212,11 +212,11 @@ def run_pipeline(files):
 
 # Configuration
 files = {
-    "dynamo": "ddb_timeseries.csv",
-    "meteo": "open_meteo.csv",
-    "solar": "solorpv.csv",
-    "powerpal": "powerpal.csv",
-    "synergy": "synergy.csv",
+    "dynamo": "../data/ddb_timeseries.csv",
+    "meteo": "../data/open_meteo.csv",
+    "solar": "../data/solorpv.csv",
+    "powerpal": "../data/powerpal.csv",
+    "synergy": "../data/synergy.csv",
 }
 
 if __name__ == "__main__":
@@ -224,10 +224,8 @@ if __name__ == "__main__":
 
     final_df = final_df.loc["2025-01-01":"2025-12-08"]
 
-    # 2. Export to CSV
     final_df.to_csv("2025_export.csv")
 
-    # 3. Export to Parquet
     # Note: Requires pyarrow or fastparquet installed
     final_df.to_parquet("2025_export.parquet")
 

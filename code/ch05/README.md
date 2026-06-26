@@ -91,7 +91,7 @@ This will start the API. You can then run queries on the API using the cURL comm
 Here is a sample command to get the weather forecast for Perth:
 
 ```
-curl -X POST http://127.0.0.1:6000/graphql \
+curl -X POST http://127.0.0.1:5000/graphql \
   -H "Content-Type: application/json" \
   -d '{
     "query": "{ weather(city: \"Perth\") { time rain surfaceTemperature } }"
@@ -119,10 +119,10 @@ python digital_twin_api.py
 Once you have the home API running, you can query it by POSTing data to the endpoint - an example query is shown below:
 
 ```
-curl -X POST http://127.0.0.1:6000/graphql \
+curl -X POST http://127.0.0.1:5050/graphql \
   -H "Content-Type: application/json" \
   -d '{
-    "query": "{ spaces(space: \"10 North St.\", startDate: \"2025-09-01T00:00:00Z\", endDate: \"2025-09-02T00:00:00Z\") { name measurements {name values {timestamp value}}} }"
+    "query": "{ spaces(space: \"742 Evergreen Terrace\", startDate: \"2025-09-01T00:00:00Z\", endDate: \"2025-09-02T00:00:00Z\") { name measurements {name values {timestamp value}}} }"
   }'
 ```
 

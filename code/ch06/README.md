@@ -46,7 +46,7 @@ There are some other example files from Chapter 6 as follows:
 
 ![Sensor data](images/sensordata.png)
 
-- *Dashboard as shown in figure 6.3* - first of all make sure you have the digital twin GraphQL API running on on 127.0.0.1:5000 as described [here](../ch05/README.md) and then open the file [here](ch06_code_dashboard.html) in a web browser like Chrome to view it. You should see the view below:
+- *Dashboard as shown in figure 6.3* - first of all make sure you have the digital twin GraphQL API running on on 127.0.0.1:5050 as described [here](../ch05/README.md) and then open the file [here](ch06_code_dashboard.html) in a web browser like Chrome to view it. You should see the view below:
 
 ![Dashboard](images/dashboard.png)
 

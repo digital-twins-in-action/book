@@ -61,12 +61,16 @@
 
       customTileset.modelMatrix = matrix();
 
-      //Add the Google Tileset to the primitives
       viewer.scene.primitives.add(googleTileset);
       viewer.scene.primitives.add(customTileset);
 
       viewer.scene.camera.flyTo({
-        destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200)
+        destination: Cesium.Cartesian3.fromDegrees(lon, (lat-0.001), 10),
+        orientation: {
+          heading: Cesium.Math.toRadians(0.0),
+          pitch: Cesium.Math.toRadians(-15.0),   
+          roll: 0.0                               
+        }
       });
 
     })();

@@ -103,7 +103,12 @@ class SceneViewer {
     setDefaultCameraPosition() {
         const [lat, lon] = this.originCoords;
         this.viewer.scene.camera.flyTo({
-            destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200)
+          destination: Cesium.Cartesian3.fromDegrees(lon, (lat-0.001), 10),
+          orientation: {
+            heading: Cesium.Math.toRadians(0.0),
+            pitch: Cesium.Math.toRadians(-15.0),   
+            roll: 0.0                               
+          }
         });
     }
 
@@ -153,18 +158,23 @@ class SceneViewer {
         return spaceData.measurements
             .filter(m => m.values?.length > 0)
             .map(m => {
-                const latest = m.values[m.values.length - 1];
+                // Find the latest value from this specific sensor
+                const sensorValues = m.values.filter(v => !v.sensorId || v.sensorId === sensorId);
+                if (!sensorValues.length) return null;
+                const latest = sensorValues[sensorValues.length - 1];
                 return {
                     name: m.name,
                     value: parseFloat(latest.value).toFixed(1),
                     unit: this.getUnitForMeasurement(m.name)
                 };
-            });
+            })
+            .filter(Boolean);
     }
 
     createSensorTooltipMarker(position, sensor, sensorValues, spaceName) {
-        const sensorIdText = `📡 ${sensor.id.substring(0, 12)}${sensor.id.length > 12 ? '...' : ''}`;
-        let maxTextWidth = sensorIdText.length * 8;
+        const displayName = sensor.name || sensor.id;
+        const headerText = `📡 ${displayName.length > 18 ? displayName.substring(0, 18) + '…' : displayName}`;
+        let maxTextWidth = headerText.length * 8;
         if (sensorValues.length > 0) {
             sensorValues.forEach(sv => {
                 maxTextWidth = Math.max(maxTextWidth, `${sv.name}: ${sv.value}${sv.unit}`.length * 7);
@@ -195,7 +205,7 @@ class SceneViewer {
                 <rect x="5" y="5" width="${width - 10}" height="${headerHeight}" rx="8" ry="8" fill="#007bff"/>
                 <rect x="5" y="${5 + 8}" width="${width - 10}" height="${headerHeight - 8}" fill="#007bff"/>
                 <text x="10" y="21" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="white">
-                    ${sensorIdText}
+                    ${headerText}
                 </text>
                 <text x="0" y="${headerHeight + 5}" font-family="Arial, sans-serif">${valueText}</text>
             </svg>`;
@@ -226,6 +236,7 @@ class SceneViewer {
 
         sensors.forEach(sensor => {
             try {
+                if (!sensor?.id) return; // guard against null sensors
                 const existingId = `sensor-${sensor.id}-${spaceName}`;
                 if (this.viewer.entities.getById(existingId)) return;
 

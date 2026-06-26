@@ -14,11 +14,11 @@
     <script>
         Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
 
-        const MAIN = { lat: -31.961505, lon: 115.868492, height: -31 };
+        //const MAIN = { lat: -31.961505, lon: 115.868492, height: -31 };
+        const [lat, lon, height] = [-31.961505, 115.868492, -31];
 
         const TILESETS = [
-            { url: "https://3d.dtia.site/tiles/tileset.json", lat: MAIN.lat, lon: MAIN.lon, height: MAIN.height, scale: 0.01, rot: -20 },
-            { url: "https://3d.dtia.site/pump/tileset.json",  lat: -31.961728, lon: 115.868341, height: -31, scale: 1, rot: 10 },
+            { url: "https://3d.dtia.site/tiles/tileset.json", lat: lat, lon: lon, height: height, scale: 0.01, rot: -20 }
         ];
 
         const WAYPOINTS = [
@@ -40,7 +40,7 @@
                 new Cesium.Matrix4()
             );
 
-        const BASE_TRANSFORM_MATRIX = matrix(MAIN.lon, MAIN.lat, -39, 1, -20);
+        const BASE_TRANSFORM_MATRIX = matrix(lon, lat, -39, 1, -20);
 
         const localToGeographic = (localCartesian) => {
             const worldPoint = Cesium.Matrix4.multiplyByPoint(BASE_TRANSFORM_MATRIX, localCartesian, new Cesium.Cartesian3());
@@ -95,7 +95,14 @@
                 });
             });
 
-            viewer.scene.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(MAIN.lon, MAIN.lat, 200) });
+            viewer.scene.camera.flyTo({
+                destination: Cesium.Cartesian3.fromDegrees(lon, (lat-0.001), 10),
+                orientation: {
+                heading: Cesium.Math.toRadians(0.0),
+                pitch: Cesium.Math.toRadians(-15.0),   
+                roll: 0.0                               
+                }
+            });
         }
 
         init();

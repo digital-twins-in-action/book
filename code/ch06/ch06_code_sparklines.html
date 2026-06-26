@@ -21,7 +21,7 @@
           }
         `;
         
-        const resp = await fetch('http://127.0.0.1:6000/graphql', {
+        const resp = await fetch('http://127.0.0.1:5050/graphql', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ query })
@@ -31,7 +31,7 @@
 
         console.log(result)
 
-        result.spaces.forEach(space => space.measurements.forEach(({ name, values }) => {
+        result.data.spaces.forEach(space => space.measurements.forEach(({ name, values }) => {
           const chartsDiv = document.getElementById('charts'); 
           const chartDiv = document.createElement('div');
           chartsDiv.appendChild(chartDiv); 

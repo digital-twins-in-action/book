@@ -1,19 +1,23 @@
+<!DOCTYPE html>
 <html>
+  <head>
+    <meta charset="utf-8">
+    <title>Digital Twin - Power Station 360</title>
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene>
+      <a-assets>
+        <img id="powerstation" 
+             src="https://3d.dtia.site/360photo/powerstation.jpg" 
+             crossorigin="anonymous">
+      </a-assets>
 
-<head>
-    <script src="https://storage.googleapis.com/vrview/2.0/build/vrview.min.js"></script>
-</head>
+      <a-sky src="#powerstation" rotation="0 -90 0"></a-sky>
 
-<body onload="onLoad()"></body>
-
-<div id="vrview"></div>
-
-<script>
-    function onLoad() {
-        var vrView = new VRView.Player('#vrView', {
-            image: "powerstation.jpg"
-        });
-    }
-</script>
-
+      <a-entity camera look-controls>
+        <a-cursor color="#FF0000"></a-cursor>
+      </a-entity>
+    </a-scene>
+  </body>
 </html>

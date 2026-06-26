@@ -147,25 +147,25 @@ Once the container is running, you can load this sensor data to the local Dynamo
 
 First of all, create the `sensor-data` table:
 
-`
+```
 aws dynamodb create-table --table-name sensor-data \
     --attribute-definitions AttributeName=partKey,AttributeType=S AttributeName=sortKey,AttributeType=N \
     --key-schema AttributeName=partKey,KeyType=HASH AttributeName=sortKey,KeyType=RANGE \
     --billing-mode PAY_PER_REQUEST --endpoint-url http://127.0.0.1:8000 --region us-east-1
-`
+```
 
 Then run the DynamoDump restore command
 
-`
+```
 dynamodump -m restore -r local -s sensor-data --host 127.0.0.1 --port 8000  --region us-east-1 --dataOnly
-`
+```
 Finally, check that the data has been imported successfully by checking how many records are in the table (there should be over 16,000)
 
-`
+```
 aws dynamodb scan \
     --table-name sensor-data \
     --select COUNT --endpoint-url http://127.0.0.1:8000 --region us-east-1
-`
+```
 
 Finally you can run the sample code by running:
 

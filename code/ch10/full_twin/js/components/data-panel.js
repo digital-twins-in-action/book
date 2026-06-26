@@ -52,11 +52,19 @@ class DataPanel {
 
         spaceData.measurements.forEach((measurement, index) => {
             if (!measurement.values?.length) return;
-            const chartId = `chart-${index}`;
             const unit = this.getUnitForMeasurement(measurement.name);
-            const sensor = spaceData.sensors?.find(s => s.id.toLowerCase().includes(measurement.name.toLowerCase()));
             const typeClass = this.getMeasurementTypeClass(measurement.name);
             const typeIcon = this.getMeasurementIcon(measurement.name);
+
+            // Group values by sensorId so each sensor gets its own chart series
+            const bySensor = new Map();
+            measurement.values.forEach(v => {
+                const sid = v.sensorId || 'unknown';
+                if (!bySensor.has(sid)) bySensor.set(sid, []);
+                bySensor.get(sid).push(v);
+            });
+
+            const sensorIds = [...bySensor.keys()];
 
             html += `
                 <div class="measurement-card">
@@ -67,13 +75,20 @@ class DataPanel {
                         </div>
                         <div class="measurement-meta">
                             ${unit ? `<span class="measurement-unit">${unit}</span>` : ''}
-                            ${sensor ? `<span class="sensor-location">(${sensor.x}, ${sensor.y})</span>` : ''}
                         </div>
                     </div>
-                    <div class="chart-wrapper">
-                        <div id="${chartId}" class="chart-container"></div>
+                    <div class="sensor-series-list">
+                        ${sensorIds.map((sid, si) => {
+                            const chartId = `chart-${index}-${si}`;
+                            return `
+                                <div class="sensor-series">
+                                    <div class="chart-wrapper">
+                                        <div id="${chartId}" class="chart-container"></div>
+                                    </div>
+                                    <div id="${chartId}-stats" class="measurement-stats"></div>
+                                </div>`;
+                        }).join('')}
                     </div>
-                    <div id="${chartId}-stats" class="measurement-stats"></div>
                 </div>`;
         });
 
@@ -88,8 +103,19 @@ class DataPanel {
             spaceData.measurements.forEach((measurement, index) => {
                 if (!measurement.values?.length) return;
                 const color = this.getChartColor(measurement.name);
-                this.createChart(`chart-${index}`, measurement.values, measurement.name,
-                    this.getUnitForMeasurement(measurement.name), color);
+                const unit = this.getUnitForMeasurement(measurement.name);
+
+                const bySensor = new Map();
+                measurement.values.forEach(v => {
+                    const sid = v.sensorId || 'unknown';
+                    if (!bySensor.has(sid)) bySensor.set(sid, []);
+                    bySensor.get(sid).push(v);
+                });
+
+                [...bySensor.keys()].forEach((sid, si) => {
+                    this.createChart(`chart-${index}-${si}`, bySensor.get(sid),
+                        measurement.name, unit, color);
+                });
             });
         }, 100);
     }

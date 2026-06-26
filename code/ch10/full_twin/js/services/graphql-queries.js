@@ -39,6 +39,7 @@ const GraphQLQueries = {
                 name
                 sensors {
                     id
+                    name
                     space
                     x
                     y
@@ -46,6 +47,7 @@ const GraphQLQueries = {
                 measurements {
                     name
                     values {
+                        sensorId
                         timestamp
                         value
                     }

@@ -48,7 +48,7 @@ if __name__ == "__main__":
     # Guard needed for macOS
     multiprocessing.freeze_support()
 
-    test_image = "data/classification/garage_open.png"
+    test_image = "data/classification/dataset/open/4.png"
 
     try:
         check_garage(test_image)

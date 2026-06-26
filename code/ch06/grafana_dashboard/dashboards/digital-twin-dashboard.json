@@ -114,10 +114,10 @@
           "global_query_id": "",
           "parser": "jq-backend",
           "refId": "A",
-          "root_selector": ".spaces[]\n| .name as $space\n| .measurements[]\n| .name as $metric\n| .values[] \n| {\ntime: (.timestamp | tonumber),\nvalue: .value,\nmetric: $metric,\nlabel: $space\n}",
+          "root_selector": ".data.spaces[]\n| .name as $space\n| .measurements[]\n| .name as $metric\n| .values[] \n| {\ntime: (.timestamp | tonumber),\nvalue: .value,\nmetric: $metric,\nlabel: $space\n}",
           "source": "url",
           "type": "json",
-          "url": "http://host.docker.internal:6000/graphql",
+          "url": "http://host.docker.internal:5050/graphql",
           "url_options": {
             "body_content_type": "text/plain",
             "body_graphql_query": "query GetData {\n  spaces(\n    space: \"Kitchen\",\n    startDate: \"${__from:date:iso}\",\n    endDate: \"${__to:date:iso}\"\n  ) {\n    name\n    measurements {\n      name\n      values {\n        timestamp\n        value\n      }\n    }\n  }\n}",

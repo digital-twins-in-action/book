@@ -130,6 +130,14 @@ class SimulatePanel {
             const impact = this.estimateImpact(m.name, delta, latest);
             const chartId = `sim-chart-${index}`;
 
+            const sensorIds = [...new Set(m.values.map(v => v.sensorId).filter(Boolean))];
+            const sensorLabel = sensorIds.length > 0
+                ? `<div class="sensor-series-header">${sensorIds.map(sid => {
+                    const sensor = spaceData.sensors?.find(s => s?.id === sid);
+                    return `<span class="sensor-series-id">${sensor?.name || sid}</span>`;
+                }).join('')}</div>`
+                : '';
+
             html += `
                 <div class="simulate-result-card">
                     <div class="simulate-result-header">
@@ -138,6 +146,7 @@ class SimulatePanel {
                             ${delta >= 0 ? '+' : ''}${pctChange}%
                         </span>
                     </div>
+                    ${sensorLabel}
                     <div class="simulate-result-values">
                         <div class="simulate-result-val">
                             <span class="stat-label">Current</span>

@@ -88,6 +88,16 @@ class PredictPanel {
             const delta = predicted - latest;
             const chartId = `predict-chart-${index}`;
 
+            // Collect unique sensor IDs for this measurement
+            const sensorIds = [...new Set(m.values.map(v => v.sensorId).filter(Boolean))];
+            const sensorNames = sensorIds.map(sid => {
+                const sensor = spaceData.sensors?.find(s => s?.id === sid);
+                return sensor?.name || sid;
+            });
+            const sensorLabel = sensorNames.length > 0
+                ? `<span class="sensor-series-id">${sensorNames.join(', ')}</span>`
+                : '';
+
             html += `
                     <div class="predict-card">
                         <div class="predict-card-header">
@@ -97,6 +107,7 @@ class PredictPanel {
                                 ${trend.charAt(0).toUpperCase() + trend.slice(1)}
                             </span>
                         </div>
+                        ${sensorLabel ? `<div class="sensor-series-header" style="border-top:none">${sensorLabel}</div>` : ''}
                         <div id="${chartId}" class="predict-chart-wrapper"></div>
                         <div class="predict-summary">
                             <div class="stat-item">

@@ -15,7 +15,7 @@
     <script>
       Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiJiYzlkYWY1NC1lY2MyLTQwMTItOTZmOS1iMGZjZDhiYWVlNmMiLCJpZCI6OTA1NDMsImlhdCI6MTc1ODk2NzE3NH0.gbIKYC6HhxEjslsowGakuUorIEnkMjKYBvo49oyd7r0';
       
-      const [lat, lon, height] = [-31.961505, 115.868492, 0];
+      const [lat, lon, height] = [-31.961505, 115.868492, 30];
 
       const matrix = () => 
         Cesium.Matrix4.multiply(
@@ -29,22 +29,13 @@
         );
 
       (async () => {
-        const viewer = new Cesium.Viewer("cesiumContainer", {
-          terrain: Cesium.Terrain.fromWorldTerrain(),
-        });
+        const viewer = new Cesium.Viewer("cesiumContainer");
+        const tileset = await Cesium.Cesium3DTileset.fromUrl(
+          "https://3d.dtia.site/powerstation/tileset.json"
+        );
 
-        const [osmBuildingsTileset, customTileset] = await Promise.all([
-          Cesium.createOsmBuildingsAsync(),
-          Cesium.Cesium3DTileset.fromUrl("https://3d.dtia.site/powerstation/tileset.json")
-        ]);
-
-        customTileset.modelMatrix = matrix();
-        viewer.scene.primitives.add(osmBuildingsTileset);
-        viewer.scene.primitives.add(customTileset);
-
-        viewer.scene.camera.flyTo({
-          destination: Cesium.Cartesian3.fromDegrees(lon, lat, 200)
-        });
+        viewer.scene.primitives.add(tileset);
+        await viewer.zoomTo(tileset);
       })();
     </script>
   </body>

@@ -99,7 +99,7 @@ https://cdn.jsdelivr.net/npm/uplot@1.6.32/dist/uPlot.min.css
     <div class="config">
         <!-- <h4>Configuration</h4> -->
         <label>GraphQL Endpoint: 
-            <input type="text" id="endpoint" value="http://127.0.0.1:6000/graphql" style="width: 300px;">
+            <input type="text" id="endpoint" value="http://127.0.0.1:5050/graphql" style="width: 300px;">
         </label><br>
         <label>Space: 
             <input type="text" id="space" value="742 Evergreen Terrace" style="width: 200px;">
@@ -309,8 +309,10 @@ https://cdn.jsdelivr.net/npm/uplot@1.6.32/dist/uPlot.min.css
 
                 hideLoading();
                 
-                if (result && result.spaces) {
-                    renderCharts(result.spaces);
+                const spaces = result?.data?.spaces;
+
+                if (spaces) {
+                    renderCharts(spaces);
                 } else {
                     showError('No data returned from API');
                 }

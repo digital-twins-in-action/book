@@ -3,7 +3,7 @@ services:
   # Memgraph Graph Database Service
   # ----------------------------------------
   memgraph:
-    image: memgraph/memgraph-mage:latest
+    image: memgraph/memgraph-mage:3.11.0
     container_name: memgraph
     ports:
       - "7687:7687"
@@ -21,7 +21,7 @@ services:
   # DynamoDB Local Service
   # ----------------------------------------
   dynamodb-local:
-    image: amazon/dynamodb-local
+    image: amazon/dynamodb-local:3.3.0
     container_name: dynamodb-local
     ports:
       - "8000:8000"
@@ -36,7 +36,7 @@ services:
   # Grafana Service (Added)
   # ----------------------------------------
   grafana:
-    image: grafana/grafana-oss
+    image: grafana/grafana-oss:13.0.1
     container_name: grafana
     ports:
       - "3000:3000"

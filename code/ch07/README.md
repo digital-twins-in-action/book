@@ -54,5 +54,3 @@ There are some other example files from Chapter 7 as follows:
 - *LiDAR sandpile* - the file [here](dtia_site/sandpile/index.html) contains the model of a sandpile created using the LiDAR sensor on an iPad, and rendered with three.js. Also available here https://3d.dtia.site/sandpit/index.html
 
 - *3D model of my home* - my home 3D model as an OBJ file and associated materials and textures can be found [here](3dmodel/) 
-
-- *Reality scan files* - the photos taken with Reality Scan for the photogrammetry example in Appendix D can be found [here](photogrammetry/images/)

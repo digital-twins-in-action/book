@@ -7,6 +7,7 @@
 
 #define MOISTURE_SENSOR_PIN 33
 #define TEMP_HUMIDITY_SENSOR_PIN 23
+#define THING_NAME "TempHumidityMoistureSensor"
 #define DHTTYPE DHT22
 #define AWS_IOT_PUBLISH_TOPIC_MOISTURE_TEMP "home/environment/indoors/moisture_temp_sensor_1"
 
@@ -39,7 +40,7 @@ void connectToAWSIoT() {
   net.setCertificate(AWS_CERT_CRT);
   net.setPrivateKey(AWS_CERT_PRIVATE);
   client.begin(AWS_IOT_ENDPOINT, 8883, net);
-  while (!client.connect(THINGNAME)) {
+  while (!client.connect(THING_NAME)) {
     delay(100);
     Serial.println(".");
   }

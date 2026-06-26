@@ -21,14 +21,18 @@ IN_MEMORY_GRAPH = {
         "label": "Land",
         "children": ["House", "Garage", "Swimming pool", "Rainwater Tank"],
         "sensors": [
-            {"name": "temp_sensor_5", "sensorId": "a840411971871c86"},
             {
-                "name": "soil_moisture_sensor_1",
+                "name": "Outdoor environment",
+                "sensorId": "a840411971871c86",
+                "x": 8.58,
+                "y": 2.82,
+            },
+            {
+                "name": "Soil moisture",
                 "sensorId": "soil_moisture_sensor_1",
                 "x": 13.16,
                 "y": 22.51,
             },
-            {"name": "soil_moisture_sensor_2", "sensorId": "soil_moisture_sensor_2"},
         ],
     },
     "House": {
@@ -43,19 +47,28 @@ IN_MEMORY_GRAPH = {
             "Back Outdoor Tap",
         ],
     },
-    "Garage": {"label": "Garage", "children": ["Freezer"]},
+    "Garage": {
+        "label": "Building",
+        "children": ["Freezer", "Garage Door"],
+        "sensors": [
+            {
+                "name": "Garage Door",
+                "sensorId": "third_reality_inc_3rdts01056z",
+                "x": 10,
+                "y": 10,
+            }
+        ],
+    },
     "Swimming pool": {
         "label": "Space",
         "children": ["Pool pump"],
-        "sensors": [
-            {"name": "ph_sensor_1", "sensorId": "ph_sensor_1", "x": 12.98, "y": 2.8}
-        ],
+        "sensors": [{"name": "PH", "sensorId": "ph_sensor_1", "x": 12.98, "y": 2.8}],
     },
     "Rainwater Tank": {
         "label": "PlumbingStorageTank",
         "sensors": [
             {
-                "name": "level_sensor_1",
+                "name": "Tank Level",
                 "sensorId": "level_sensor_1",
                 "x": 4.52,
                 "y": -0.2,
@@ -82,7 +95,7 @@ IN_MEMORY_GRAPH = {
         "label": "Room",
         "sensors": [
             {
-                "name": "temp_sensor_1",
+                "name": "Bedroom temp",
                 "sensorId": "a84041ce41845d13",
                 "x": 4.44,
                 "y": 1.22,
@@ -93,7 +106,7 @@ IN_MEMORY_GRAPH = {
         "label": "Room",
         "sensors": [
             {
-                "name": "temp_sensor_2",
+                "name": "Bedroom temp",
                 "sensorId": "a84041dbf1850d33",
                 "x": 8.05,
                 "y": 3.75,
@@ -102,7 +115,7 @@ IN_MEMORY_GRAPH = {
     },
     "Bedroom 3": {
         "label": "Room",
-        "sensors": [{"name": "temp_sensor_3", "sensorId": "temp_sensor_3"}],
+        "sensors": [],
     },
     "Bathroom": {"label": "Bathroom"},
     "Hallway": {"label": "Hallway"},
@@ -112,7 +125,7 @@ IN_MEMORY_GRAPH = {
         "children": ["Air Conditioner"],
         "sensors": [
             {
-                "name": "24e124710b423527",
+                "name": "HVAC",
                 "sensorId": "24e124710b423527",
                 "x": 10.77,
                 "y": 14.33,
@@ -125,7 +138,7 @@ IN_MEMORY_GRAPH = {
         "label": "ElectricityMeter",
         "sensors": [
             {
-                "name": "power_meter_1",
+                "name": "Main power",
                 "sensorId": "power_meter_1",
                 "x": 9.66,
                 "y": 16.28,
@@ -137,7 +150,7 @@ IN_MEMORY_GRAPH = {
         "images": [{"url": "01_09_25_meter.jpg"}, {"url": "02_09_25_meter.jpg"}],
         "sensors": [
             {
-                "name": "camera_sensor_1",
+                "name": "Main water",
                 "sensorId": "camera_sensor_1",
                 "x": 3.13,
                 "y": 21.99,
@@ -147,13 +160,13 @@ IN_MEMORY_GRAPH = {
     "Front Outdoor Tap": {
         "label": "Faucet",
         "sensors": [
-            {"name": "flow_meter_2", "sensorId": "flow_meter_2", "x": 0.839, "y": 0.5}
+            {"name": "Outdoor tap", "sensorId": "flow_meter_2", "x": 0.839, "y": 0.5}
         ],
     },
     "Back Outdoor Tap": {
         "label": "Faucet",
         "sensors": [
-            {"name": "flow_meter_3", "sensorId": "flow_meter_3", "x": 0.75, "y": 18.31}
+            {"name": "Outdoor tap", "sensorId": "flow_meter_3", "x": 0.75, "y": 18.31}
         ],
     },
     "Pool pump": {
@@ -166,7 +179,7 @@ IN_MEMORY_GRAPH = {
         ],
         "sensors": [
             {
-                "name": "power_meter_3",
+                "name": "Pool pump",
                 "sensorId": "00137a1000013507",
                 "x": 15.23,
                 "y": 2.90,
@@ -177,19 +190,18 @@ IN_MEMORY_GRAPH = {
         "label": "ElectricalEquipment",
         "sensors": [
             {
-                "name": "power_meter_2",
+                "name": "Washing machine power",
                 "sensorId": "power_meter_2",
                 "x": 2.42,
                 "y": 7.99,
-            },
-            {"name": "flow_meter_4", "sensorId": "flow_meter_4"},
+            }
         ],
     },
     "Refrigerator": {
         "label": "ElectricalEquipment",
         "sensors": [
             {
-                "name": "power_meter_4",
+                "name": "Refrigerator",
                 "sensorId": "24e124148e423058",
                 "x": 3.54,
                 "y": 13.2,
@@ -210,7 +222,17 @@ IN_MEMORY_GRAPH = {
     "Oven": {"label": "ElectricalEquipment"},
     "Freezer": {"label": "ElectricalEquipment"},
     "Dehumidifier": {"label": "ElectricalEquipment"},
-    "PV Array": {"label": "ElectricalEquipment"},
+    "PV Array": {
+        "label": "ElectricalEquipment",
+        "sensors": [
+            {
+                "name": "Inverter",
+                "sensorId": "fronius_inverter",
+                "x": 2.97,
+                "y": 7.99,
+            }
+        ],
+    },
 }
 
 
@@ -232,7 +254,13 @@ class MeasurementGroup(ObjectType):
 
 
 class Sensor(ObjectType):
-    id, space, x, y = String(required=True), String(required=True), Float(), Float()
+    id, name, space, x, y = (
+        String(required=True),
+        String(required=True),
+        String(required=True),
+        Float(),
+        Float(),
+    )
 
 
 class Document(ObjectType):
@@ -281,7 +309,8 @@ class Query(ObjectType):
                 [
                     {
                         "spaceName": node,
-                        "sensorId": s.get("sensorId", s.get("name")),
+                        "sensorId": s.get("sensorId"),
+                        "name": s.get("name"),
                         "sensorX": s.get("x"),
                         "sensorY": s.get("y"),
                     }
@@ -338,6 +367,7 @@ class Query(ObjectType):
                     Sensor(
                         id=sid,
                         space=name,
+                        name=sensor_map.get(sid, {}).get("name"),
                         x=sensor_map.get(sid, {}).get("sensorX"),
                         y=sensor_map.get(sid, {}).get("sensorY"),
                     )

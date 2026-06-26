@@ -35,7 +35,6 @@
       .then(function (tileset) {
         tileset.pointCloudShading.attenuation = true;
         tileset.pointCloudShading.eyeDomeLighting = true;
-        // Apply the default style if it exists
         const extras = tileset.asset.extras;
         if (
           Cesium.defined(extras) &&
